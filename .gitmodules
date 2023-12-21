@@ -1,0 +1,4 @@
+[submodule "custom-messages-sender/can"]
+	path = custom-messages-sender/can
+	url = git@github.com:eagletrt/can.git
+	branch = build-evo
