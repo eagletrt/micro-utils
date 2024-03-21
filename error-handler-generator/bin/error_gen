@@ -1,0 +1,71 @@
+#!/usr/bin/env ruby
+
+# frozen_string_literal: true
+
+require 'error_gen'
+require 'optparse'
+
+generator = ErrorGen::Generator.new
+
+op = OptionParser.new do |parser|
+  parser.banner = <<~BANNER
+    Error utilities generator for embedded systems
+    Version #{ErrorGen::VERSION}
+
+    Usage: error_gen [options] errors.json
+  BANNER
+
+  parser.on('-o', '--output NAME', 'Specify basename for the generated source files') do |filename|
+    generator.target_name = filename
+    exit
+  end
+
+  parser.on('-h', '--help', 'Display this help and exit') do
+    puts parser
+    exit
+  end
+
+  parser.on('-v', '--version', 'Output version information and exit') do
+    puts "#{File.basename($PROGRAM_NAME, File.extname($PROGRAM_NAME))} #{ErrorGen::VERSION}"
+    exit
+  end
+end
+
+op.parse!
+
+# Check input file
+unless ARGV[0]
+  warn "[ERROR]: A C/C++ header file path is needed!\n\n"
+  warn op
+  exit 1
+end
+unless File.exist? ARGV[0]
+  warn "[ERROR]: #{ARGV[0]} does not exist!\n\n"
+  warn op
+  exit 2
+end
+if File.extname(ARGV[0]) != '.json'
+  warn "[ERROR]: #{ARGV[0]} is not an JSON file!\n\n"
+  warn op
+  exit 3
+end
+
+# Parse file
+unless generator.parse(ARGV[0])
+  warn "[ERROR]: Cannot parse the file #{ARGV[0]}: #{generator.ret_msg}\n"
+  exit 4
+end
+
+puts "Generating header file...\n"
+unless generator.generate_h
+  warn "[ERROR]: Cannot generate the header file: #{generator.ret_msg}\n"
+  exit 5
+end
+puts "Header file generated correctly\n"
+
+puts "Generating source file...\n"
+unless generator.generate_c
+  warn "[ERROR]: Cannot generate the source file: #{generator.ret_msg}\n"
+  exit 6
+end
+puts "Source file generated correctly\n"

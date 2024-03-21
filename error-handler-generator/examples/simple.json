@@ -1,0 +1,20 @@
+{
+    "errors": [
+        {
+            "name": "ERROR_FIRST",
+            "timeout": 100,
+            "instances": 10
+        },
+        {
+            "name": "ERROR_SECOND",
+            "timeout": 250,
+            "instances": 108
+        },
+        {
+            "name": "ERROR_THIRD",
+            "timeout": 2000,
+            "instances": 1
+        }
+    ]
+}
+
