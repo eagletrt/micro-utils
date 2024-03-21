@@ -17,7 +17,6 @@ op = OptionParser.new do |parser|
 
   parser.on('-o', '--output NAME', 'Specify basename for the generated source files') do |filename|
     generator.target_name = filename
-    exit
   end
 
   parser.on('-h', '--help', 'Display this help and exit') do
@@ -35,7 +34,7 @@ op.parse!
 
 # Check input file
 unless ARGV[0]
-  warn "[ERROR]: A C/C++ header file path is needed!\n\n"
+  warn "[ERROR]: A path to a file is needed!\n\n"
   warn op
   exit 1
 end

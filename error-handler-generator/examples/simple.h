@@ -4,7 +4,7 @@
  * https://github.com/eagletrt/micro-utils/tree/master/error-handler-generator
  *
  * Error_gen version 0.1.0-alpha
- * Generation date: 2024-03-19 19:02:48 +0100
+ * Generation date: 2024-03-21 15:06:59 +0100
  * Generation from: 
  * The error handler contains:
  *     - 3 error groups
