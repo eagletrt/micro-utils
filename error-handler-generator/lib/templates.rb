@@ -38,11 +38,18 @@ module ErrorGen
       // Total number of error instances
       <%= '#define ERROR_INSTANCE_COUNT ' + tot_instances.to_s %>
 
-      
-      // Aliases for the ring buffer critical section functions
-      // For more info check the docs of the ring buffer library
-      #define error_cs_enter ring_buffer_cs_enter
-      #define error_cs_exit ring_buffer_cs_exit
+
+      /**
+       * @brief Set or reset an instance of an error based on a condition
+       * @details If the condition is true the error is set, otherwise it is reset
+       *
+       * @param condition A boolean expression
+       * @param group The group to which the error belongs
+       * @param instance The instance of the error
+       * @param The current time (in ms)
+       */
+      #define ERROR_TOGGLE_IF(condition, group, instance, timestamp) \\
+          ((condition) ? error_set(group, instance, timestamp) : error_reset(group, instance))
       
       /** @brief Type of the error that categorize a group of instances */
       typedef enum {
@@ -68,8 +75,15 @@ module ErrorGen
           bool is_expired;
       } Error;
 
-      /** @brief Initialize the internal error handler structures */
-      void error_init(void);
+      /**
+       * @brief Initialize the internal error handler structures
+       * @details A critical section is defined as a block of code where, if an interrupt
+       * happens, undefined behaviour with the modified data within the block can happen
+       *
+       * @param cs_enter A pointer to a function that should manage a critical section
+       * @param cs_exit A pointer to a function that shuold manage a critical section
+       */
+      void error_init(void (* cs_enter)(void), void (* cs_exit)(void));
 
       /**
        * @brief Set an error which will expire after a certain amount of time (the timeout)
@@ -121,6 +135,8 @@ module ErrorGen
     HEADER
 
     # TODO: Add general error that expire immediately if something goes wrong in this library
+    # TODO: Add callback that is called after an error is expired an give useful info
+    #       about it as a parameter
     # TODO: Better find function (apply heuristics to reduce complexity)
     # TODO: Remove element without index in O(log N)
     CC = <<~SOURCE
@@ -190,8 +206,8 @@ module ErrorGen
       int8_t _error_compare(void * a, void * b);
 
       bool routine_lock = false;
-      RingBuffer(ErrorData, ERROR_BUFFER_SIZE) err_buf = ring_buffer_init(ErrorData, ERROR_BUFFER_SIZE);
-      MinHeap(Error *, ERROR_INSTANCE_COUNT) running_errors = min_heap_init(Error *, ERROR_INSTANCE_COUNT, _error_compare);
+      RingBuffer(ErrorData, ERROR_BUFFER_SIZE) err_buf;
+      MinHeap(Error *, ERROR_INSTANCE_COUNT) running_errors = min_heap_new(Error *, ERROR_INSTANCE_COUNT, _error_compare);
 
       /**
        * @brief Compare two errors based on the time when they were set
@@ -311,7 +327,9 @@ module ErrorGen
               error_update_timer_callback(top->timestamp, timeouts[top->group]);
       }
 
-      void error_init(void) {
+      void error_init(void (* cs_enter)(void), void (* cs_exit)(void)) {
+          ring_buffer_init(&err_buf, ErrorData, ERROR_BUFFER_SIZE, cs_enter, cs_exit);
+
           <%= init %>
       }
       void error_set(ErrorGroup group, ErrorInstance instance, uint32_t timestamp) {
