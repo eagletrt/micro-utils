@@ -25,6 +25,7 @@ module ErrorGen
 
       #include <stdint.h>
       #include <stdbool.h>
+      #include <stddef.h>
       <%
         tot_instances = 0
         errors_names = []
@@ -86,6 +87,20 @@ module ErrorGen
       void error_init(void (* cs_enter)(void), void (* cs_exit)(void));
 
       /**
+       * @brief Get the number of errors that has been set but they still have to expire
+       * 
+       * @param size_t The number of running errors
+       */
+      size_t error_get_running(void);
+
+      /**
+       * @brief Get the number of expired errors
+       * 
+       * @param size_t The number of expired errors
+       */
+      size_t error_get_expired(void);
+
+      /**
        * @brief Set an error which will expire after a certain amount of time (the timeout)
        * 
        * @param group The group to which the error belongs
@@ -134,6 +149,7 @@ module ErrorGen
 
     HEADER
 
+    # TODO: Add function to get all error information
     # TODO: Add general error that expire immediately if something goes wrong in this library
     # TODO: Add callback that is called after an error is expired an give useful info
     #       about it as a parameter
@@ -141,8 +157,6 @@ module ErrorGen
     # TODO: Remove element without index in O(log N)
     CC = <<~SOURCE
       #include "<%= @target_name %>.h"
-
-      #include <stddef.h>
 
       #include "ring-buffer.h"
       #include "min-heap.h"
@@ -207,6 +221,7 @@ module ErrorGen
 
       bool routine_lock = false;
       RingBuffer(ErrorData, ERROR_BUFFER_SIZE) err_buf;
+      RingBuffer(Error *, ERROR_INSTANCE_COUNT) expired_errors = ring_buffer_new(Error *, ERROR_INSTANCE_COUNT, NULL, NULL);
       MinHeap(Error *, ERROR_INSTANCE_COUNT) running_errors = min_heap_new(Error *, ERROR_INSTANCE_COUNT, _error_compare);
 
       /**
@@ -307,6 +322,10 @@ module ErrorGen
               top->is_running = false;
               top->is_expired = true;
 
+              // Add error to the list of expired errors
+              if (!ring_buffer_push_back(&expired_errors, top))
+                  break;
+
               // Get next error and remove the previous
               if (!min_heap_remove(&running_errors, 0, NULL))
                   break;
@@ -331,6 +350,12 @@ module ErrorGen
           ring_buffer_init(&err_buf, ErrorData, ERROR_BUFFER_SIZE, cs_enter, cs_exit);
 
           <%= init %>
+      }
+      size_t error_get_running(void) {
+          return min_heap_size(&running_errors);
+      }
+      size_t error_get_expired(void) {
+          return ring_buffer_size(&expired_errors);
       }
       void error_set(ErrorGroup group, ErrorInstance instance, uint32_t timestamp) {
           if (group >= ERROR_COUNT || instance >= instances[group])

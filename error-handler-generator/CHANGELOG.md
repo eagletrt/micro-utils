@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.2.0] - 23-03-2024
+
+### Added
+
+- Function that returns the current number of running errors
+- Function that returns the current number of expired errors
+
 ## [1.1.0] - 22-03-2024
 
 ### Added
