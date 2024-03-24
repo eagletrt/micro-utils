@@ -52,11 +52,11 @@ The `errors` array contains the list of errors and each error is defined by:
 To use this library first you have to install [Gem](https://rubygems.org/), the ruby
 package manager.
 
-The go to the root folder of this project (where the `error-gen.gemspec` file is located),
+The go to the root folder of this project (where the `error_gen.gemspec` file is located),
 build and install the gem:
 ```shell
-gem build -o error-gen.gem   # Build
-gem install error-gen.gem    # Install
+gem build -o error_gen.gem   # Build
+gem install error_gen.gem    # Install
 ```
 
 > [!WARNING]

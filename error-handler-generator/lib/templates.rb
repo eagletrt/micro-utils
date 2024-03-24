@@ -101,6 +101,62 @@ module ErrorGen
       size_t error_get_expired(void);
 
       /**
+       * @brief Get the number of running error of a specific group
+       *
+       * @param group The error group
+       * @return uint16_t The number of running errors
+       */
+      uint16_t error_get_group_running(ErrorGroup group);
+
+      /**
+       * @brief Get the number of expired error of a specific group
+       *
+       * @param group The error group
+       * @return uint16_t The number of running errors
+       */
+      uint16_t error_get_group_expired(ErrorGroup group);
+
+      /**
+       * @brief Get a copy of all the errors that are currently running
+       * @attention This function can be quite expensive in terms of time
+       * and should be used wisely, do not call to often
+       * @attention This function calls the critical section handler functions
+       * @details The out array should be able to contain all the instances
+       *
+       * @param out A pointer to an array of errors where the data is copied into
+       * @return size_t The number of copied errors
+       */
+      size_t error_dump_running(Error * out);
+
+      /**
+       * @brief Get a copy of all the errors that are expired
+       * @attention This function can be quite expensive in terms of time
+       * and should be used wisely, do not call to often
+       * @attention This function calls the critical section handler functions
+       * @details The out array should be able to contain all the instances
+       *
+       * @param out A pointer to an array of errors where the data is copied into
+       * @return size_t The number of copied errors
+       */
+      size_t error_dump_expired(Error * out);
+
+      /**
+       * @brief Get all the groups in which at least one error is running
+       * 
+       * @param out A pointer to an array of groups where the data is copied into
+       * @return size_t The number of copied groups
+       */
+      size_t error_dump_running_groups(ErrorGroup * out);
+
+      /**
+       * @brief Get all the groups in which at least one error is expired
+       * 
+       * @param out A pointer to an array of groups where the data is copied into
+       * @return size_t The number of copied groups
+       */
+      size_t error_dump_expired_groups(ErrorGroup * out);
+
+      /**
        * @brief Set an error which will expire after a certain amount of time (the timeout)
        * 
        * @param group The group to which the error belongs
@@ -149,7 +205,6 @@ module ErrorGen
 
     HEADER
 
-    # TODO: Add function to get all error information
     # TODO: Add general error that expire immediately if something goes wrong in this library
     # TODO: Add callback that is called after an error is expired an give useful info
     #       about it as a parameter
@@ -157,6 +212,8 @@ module ErrorGen
     # TODO: Remove element without index in O(log N)
     CC = <<~SOURCE
       #include "<%= @target_name %>.h"
+
+      #include <string.h>
 
       #include "ring-buffer.h"
       #include "min-heap.h"
@@ -224,6 +281,10 @@ module ErrorGen
       RingBuffer(Error *, ERROR_INSTANCE_COUNT) expired_errors = ring_buffer_new(Error *, ERROR_INSTANCE_COUNT, NULL, NULL);
       MinHeap(Error *, ERROR_INSTANCE_COUNT) running_errors = min_heap_new(Error *, ERROR_INSTANCE_COUNT, _error_compare);
 
+      // Fast lookup for groups that are running or expired
+      uint16_t running_groups[ERROR_COUNT];
+      uint16_t expired_groups[ERROR_COUNT];
+
       /**
        * @brief Compare two errors based on the time when they were set
        * and their timeouts
@@ -256,6 +317,7 @@ module ErrorGen
           // Update error info
           err->is_running = true;
           err->timestamp = data.timestamp;
+          ++running_groups[data.group];
 
           // Add error to the running list of errors and
           // update timer if the error is the first to expire
@@ -279,6 +341,7 @@ module ErrorGen
 
           // Update error info
           err->is_running = false;
+          --running_groups[data.group];
 
           // Get the current first element
           Error * top = NULL;
@@ -288,7 +351,9 @@ module ErrorGen
           if (top == err) {
               // If the removed error is the first in the heap
               // remove it and update (or stop) the timer
-              if (!min_heap_remove(&running_errors, 0, NULL)) return;
+              if (!min_heap_remove(&running_errors, 0, NULL))
+                  return;
+
               if (min_heap_is_empty(&running_errors))
                   error_stop_timer_callback();
               else if (min_heap_top(&running_errors, &top))
@@ -321,6 +386,7 @@ module ErrorGen
               // Update error info
               top->is_running = false;
               top->is_expired = true;
+              ++expired_groups[data.group];
 
               // Add error to the list of expired errors
               if (!ring_buffer_push_back(&expired_errors, top))
@@ -356,6 +422,60 @@ module ErrorGen
       }
       size_t error_get_expired(void) {
           return ring_buffer_size(&expired_errors);
+      }
+      uint16_t error_get_group_running(ErrorGroup group) {
+          if (group >= ERROR_COUNT)
+              return 0U;
+          return running_groups[group];
+      }
+      uint16_t error_get_group_expired(ErrorGroup group) {
+          if (group >= ERROR_COUNT)
+              return 0U;
+          return expired_groups[group];
+      }
+      size_t error_dump_running(Error * out) {
+          if (out == NULL)
+              return 0U;
+
+          err_buf.cs_enter();
+          // Copy data
+          size_t i;
+          for (i = 0; i < running_errors.size; ++i)
+              memcpy(&out[i], running_errors.data[i], sizeof(Error));
+          err_buf.cs_exit();
+          return i;
+      }
+      size_t error_dump_expired(Error * out) {
+          if (out == NULL)
+              return 0U;
+
+          err_buf.cs_enter();
+          // Copy data
+          size_t i;
+          for (i = 0; i < expired_errors.size; ++i)
+              memcpy(&out[i], expired_errors.data[i], sizeof(Error));
+          err_buf.cs_exit();
+          return i;
+      }
+      size_t error_dump_running_groups(ErrorGroup * out) {
+          if (out == NULL)
+              return 0U;
+          // Copy data
+          size_t cnt = 0;
+          for (size_t i = 0; i < ERROR_COUNT; ++i)
+              if (running_groups[i] > 0)
+                  out[cnt++] = i;
+          return cnt;
+      }
+      size_t error_dump_expired_groups(ErrorGroup * out) {
+          if (out == NULL)
+              return 0U;
+          // Copy data
+          size_t cnt = 0;
+          for (size_t i = 0; i < ERROR_COUNT; ++i)
+              if (expired_groups[i] > 0)
+                  out[cnt++] = i;
+          return cnt;
       }
       void error_set(ErrorGroup group, ErrorInstance instance, uint32_t timestamp) {
           if (group >= ERROR_COUNT || instance >= instances[group])
