@@ -10,7 +10,7 @@ module ErrorGen
        *
        * Error_gen version <%= ErrorGen::VERSION %>
        * Generation date: <%= Time.now %>
-       * Generation from: <%= @jsonfile %>
+       * Generated from: <%= @jsonfile %>
        * The error handler contains:
        *     - <%= @errors.length %> error groups
        *     - <%= @errors.map(&:instances).inject(0, &:+) %> total error instances

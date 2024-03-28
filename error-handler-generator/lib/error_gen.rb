@@ -47,7 +47,7 @@ module ErrorGen
       raise ArgumentError, 'File must be in JSON format' unless File.extname(filename) == '.json'
 
       # Get the basename of the generated files
-      @gen_dir = File.dirname(filename)
+      @gen_dir = File.dirname(@jsonfile = filename)
       @target_name = File.basename(filename, '.json') unless @target_name && !@target_name.empty?
 
       # Parse JSON file

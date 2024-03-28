@@ -7,6 +7,12 @@ list of critical errors and give as output the **C code** that handles them.
 > [!NOTE]
 > Examples can be found inside the example folder
 
+## Dependencies
+
+The generated library depends of the following libraries, that can be found on the [micro-libs](https://github.com/eagletrt/micro-libs) repository:
+- [ring-buffer](https://github.com/eagletrt/micro-libs/tree/master/ring-buffer)
+- [min-heap](https://github.com/eagletrt/micro-libs/tree/master/min-heap)
+
 ## Concept
 
 The user can define groups of errors that specify a certain category to which the single error
