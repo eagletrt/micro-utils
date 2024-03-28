@@ -1,5 +1,16 @@
 # Change Log
 
+## [1.3.1] - 28-03-2024
+
+### Added
+
+- Dependencies list inside README.md
+
+### Fixed
+
+- Empty filename in the 'generated from' banner field at the top of the generated source
+and header files
+
 ## [1.3.0] - 24-03-2024
 
 ### Added
