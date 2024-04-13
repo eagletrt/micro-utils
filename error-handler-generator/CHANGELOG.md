@@ -1,5 +1,11 @@
 # Change Log
 
+## [1.3.2] - 14-04-2024
+
+### Chore
+
+- Update version of the ring buffer and the min heap libraries
+
 ## [1.3.1] - 28-03-2024
 
 ### Added

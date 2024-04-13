@@ -321,7 +321,7 @@ module ErrorGen
 
           // Add error to the running list of errors and
           // update timer if the error is the first to expire
-          if (!min_heap_insert(&running_errors, &err))
+          if (min_heap_insert(&running_errors, &err) != MIN_HEAP_OK)
               return;
           Error ** top = (Error **)min_heap_peek(&running_errors);
           if (top != NULL && *top == err)
@@ -345,18 +345,18 @@ module ErrorGen
 
           // Get the current first element
           Error * top = NULL;
-          if (!min_heap_top(&running_errors, &top))
+          if (min_heap_top(&running_errors, &top) != MIN_HEAP_OK)
               return;
 
           if (top == err) {
               // If the removed error is the first in the heap
               // remove it and update (or stop) the timer
-              if (!min_heap_remove(&running_errors, 0, NULL))
+              if (min_heap_remove(&running_errors, 0, NULL) != MIN_HEAP_OK)
                   return;
 
               if (min_heap_is_empty(&running_errors))
                   error_stop_timer_callback();
-              else if (min_heap_top(&running_errors, &top))
+              else if (min_heap_top(&running_errors, &top) == MIN_HEAP_OK)
                   error_update_timer_callback(top->timestamp, timeouts[top->group]);
           }
           else {
@@ -375,7 +375,7 @@ module ErrorGen
       void _error_expire(ErrorData data) {
           // Get error
           Error * top = NULL;
-          if (!min_heap_top(&running_errors, &top))
+          if (min_heap_top(&running_errors, &top) != MIN_HEAP_OK)
               return;
 
           if (!top->is_running || top->is_expired)
@@ -389,11 +389,11 @@ module ErrorGen
               ++expired_groups[data.group];
 
               // Add error to the list of expired errors
-              if (!ring_buffer_push_back(&expired_errors, top))
+              if (ring_buffer_push_back(&expired_errors, top) != RING_BUFFER_OK)
                   break;
 
               // Get next error and remove the previous
-              if (!min_heap_remove(&running_errors, 0, NULL))
+              if (min_heap_remove(&running_errors, 0, NULL) != MIN_HEAP_OK)
                   break;
 
               // Stop the timer if there are no more errors
@@ -403,7 +403,7 @@ module ErrorGen
               }
 
               // Get next errors
-              if (!min_heap_top(&running_errors, &top))
+              if (min_heap_top(&running_errors, &top) != MIN_HEAP_OK)
                   break;
           } while(_error_compare(&top, &prev) <= 0);
           
@@ -488,7 +488,7 @@ module ErrorGen
               .timestamp = timestamp,
               .op = _error_set
           };
-          if (ring_buffer_push_back(&err_buf, &data))
+          if (ring_buffer_push_back(&err_buf, &data) == RING_BUFFER_OK)
               error_routine();
       }
       void error_reset(ErrorGroup group, ErrorInstance instance) {
@@ -502,13 +502,13 @@ module ErrorGen
               .timestamp = 0,
               .op = _error_reset
           };
-          if (ring_buffer_push_back(&err_buf, &data))
+          if (ring_buffer_push_back(&err_buf, &data) == RING_BUFFER_OK)
               error_routine();
       }
       void error_expire(void) {
           // Push data to the buffer
           ErrorData data = { .op = _error_expire };
-          if (ring_buffer_push_back(&err_buf, &data))
+          if (ring_buffer_push_back(&err_buf, &data) == RING_BUFFER_OK)
               error_routine();
       }
       void error_routine(void) {
@@ -525,7 +525,7 @@ module ErrorGen
 
           // Execute the right function for the error
           ErrorData err;
-          if (ring_buffer_pop_front(&err_buf, &err))
+          if (ring_buffer_pop_front(&err_buf, &err) == RING_BUFFER_OK)
               err.op(err);
 
           routine_lock = false;
