@@ -227,9 +227,15 @@ void send_message(int current_focus) {
   char final_command[BUFSIZ];
   int can_send_retval = 0;
   int current_to_serialize_idx = 0;
-  for (size_t ifield = 0; ifield < current_n_fields; ifield++) {
+  if (current_n_fields > 0) {
+    int field_len = strlen(current_fields[0]);
+    memcpy(to_serialize + current_to_serialize_idx, current_fields[0],
+           field_len);
+    current_to_serialize_idx += field_len; 
+  }
+  for (size_t ifield = 1; ifield < current_n_fields; ifield++) {
     int field_len = strlen(current_fields[ifield]);
-    memcpy(to_serialize + current_to_serialize_idx, " ", 1);
+    memcpy(to_serialize + current_to_serialize_idx, ",", 1);
     current_to_serialize_idx++;
     memcpy(to_serialize + current_to_serialize_idx, current_fields[ifield],
            field_len);
