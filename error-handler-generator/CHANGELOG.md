@@ -1,5 +1,11 @@
 # Change Log
 
+## [1.3.3] - 15-04-2024
+
+### Fixed
+
+- Expired errors buffer not updating correctly
+
 ## [1.3.2] - 14-04-2024
 
 ### Chore

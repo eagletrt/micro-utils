@@ -389,7 +389,7 @@ module ErrorGen
               ++expired_groups[data.group];
 
               // Add error to the list of expired errors
-              if (ring_buffer_push_back(&expired_errors, top) != RING_BUFFER_OK)
+              if (ring_buffer_push_back(&expired_errors, &top) != RING_BUFFER_OK)
                   break;
 
               // Get next error and remove the previous
