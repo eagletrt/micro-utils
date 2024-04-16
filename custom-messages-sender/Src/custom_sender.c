@@ -41,7 +41,7 @@ int can_send(can_message_t *msg, int can_socket) {
 
 int _scrwidth                                  = 0;
 int _scrheight                                 = 0;
-enum application_tabs_t ctab                   = search_menu;
+enum application_tabs_t ctab                   = main_menu;
 int chosen_msg_idx                             = -1;
 enum interfaces_t chosen_interface             = -1;
 char current_fields[MAX_N_FIELDS][GEN_STR_LEN] = {0};
@@ -269,13 +269,13 @@ void send_message(int current_focus) {
 
 int action(int current_focus) {
     switch (ctab) {
-        case search_menu:
+        case main_menu:
             chosen_msg_idx   = current_focus + get_intf_base_idx();
             chosen_interface = chosen_intf;
             current_n_fields = metadata_msgs[chosen_msg_idx].n_fields;
             ctab             = fill_fields_menu;
             for (size_t ifield = 0; ifield < MAX_N_FIELDS; ifield++) {
-                memcpy(current_fields[ifield], "0", GEN_STR_LEN);
+                memcpy(current_fields[ifield], "0", 2);
             }
             return 0;
         case fill_fields_menu:
@@ -286,7 +286,7 @@ int action(int current_focus) {
                 chosen_msg_idx   = -1;
                 chosen_interface = primary_intf;
                 current_n_fields = -1;
-                ctab             = search_menu;
+                ctab             = main_menu;
                 return 0;
             }
             return current_focus;
@@ -295,7 +295,7 @@ int action(int current_focus) {
 
 int current_focus_dec(int current_focus) {
     switch (ctab) {
-        case search_menu:
+        case main_menu:
             return clamp(current_focus - 1, 0, get_intf_tot_msg() - 1);
         case fill_fields_menu:
             return clamp(current_focus - 1, 0, metadata_msgs[chosen_msg_idx].n_fields);
@@ -305,6 +305,7 @@ int current_focus_dec(int current_focus) {
 int current_focus_inc(int current_focus) {
     switch (ctab) {
         case search_menu:
+        case main_menu:
             return clamp(current_focus + 1, 0, get_intf_tot_msg() - 1);
         case fill_fields_menu:
             return clamp(current_focus + 1, 0, metadata_msgs[chosen_msg_idx].n_fields);
@@ -319,6 +320,7 @@ int retrieve_input_prompt(int current_focus) {
     if (prompt_win == NULL) {
         assert(0 && "Could not create a input prompt window");
     }
+    curs_set(1);
 
     while (cind < GEN_STR_LEN && !input_enter) {
         wclear(prompt_win);
@@ -330,6 +332,10 @@ int retrieve_input_prompt(int current_focus) {
         wrefresh(prompt_win);
         int inchar = getch();
         switch (inchar) {
+            case ESCAPE_KEY: {
+                input_enter = true;
+                break;
+            }
             case KEY_ENTER:
             case '\n':
                 input_enter = true;
@@ -346,25 +352,20 @@ int retrieve_input_prompt(int current_focus) {
                 break;
         }
     }
+    curs_set(0);
     memcpy(current_fields[current_focus], input_prompt, GEN_STR_LEN);
     delwin(prompt_win);
 }
 
-int render_user_message_search(char *search_string) {
-    // given a search string find all the messages
-    // metadata_msgs
-    switch (chosen_intf)
-    {
+int find() {
+    switch (chosen_intf) {
         case primary_intf: {
-
             break;
         }
         case secondary_intf: {
-
             break;
         }
         case inverter_intf: {
-
             break;
         }
         default: {
@@ -373,7 +374,7 @@ int render_user_message_search(char *search_string) {
     }
 }
 
-int render_search_menu(int current_focus) {
+int render_main_menu(int current_focus, void *data) {
     wclear(stdscr);
     wattrset(stdscr, COLOR_PAIR(MAIN_THEME));
     int current_row = 0;
@@ -384,7 +385,17 @@ int render_search_menu(int current_focus) {
     current_row++;
     WRITE_CENTERED(stdscr, current_row, title, -1);
     wattrset(stdscr, COLOR_PAIR(MAIN_THEME));
-    PRINT_INDICATIONS(stdscr);
+    if (data == NULL) {
+        PRINT_INDICATIONS(stdscr);
+    } else {
+        char *searching_string = (char *)data;
+        current_row += 2;
+        const char searching_tip_1[] = "You are searching for the following string";
+        WRITE_CENTERED(stdscr, current_row, searching_tip_1, -1);
+        current_row++;
+        WRITE_CENTERED(stdscr, current_row, searching_string, -1);
+        current_row += 2;
+    }
 
     int intf_tot_msg  = get_intf_tot_msg();
     int intf_base_idx = get_intf_base_idx();
@@ -394,9 +405,10 @@ int render_search_menu(int current_focus) {
         char *msg_name = metadata_msgs[intf_base_idx + showed_msg].msg_name;
         WRITE_CENTERED(stdscr, current_row + iidx, msg_name, showed_msg);
     }
+    refresh();
 }
 
-int render_fill_fields_menu(int current_focus) {
+int render_fill_fields_menu(int current_focus, void *data) {
     wclear(stdscr);
     wattrset(stdscr, COLOR_PAIR(MAIN_THEME));
     box(stdscr, 0, 0);
@@ -436,4 +448,4 @@ int render_fill_fields_menu(int current_focus) {
     return 0;
 }
 
-int (*render_menus[n_application_tabs])(int) = {render_search_menu, render_fill_fields_menu};
+int (*render_menus[n_application_tabs])(int, void *) = {render_main_menu, render_fill_fields_menu, render_main_menu};

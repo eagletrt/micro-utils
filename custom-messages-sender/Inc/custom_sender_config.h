@@ -19,21 +19,23 @@
 /****
  * Choose one of the two following CAN_DEVICES configurations
 */
-#define CAN_DEVICES                                                            \
-  { "vcan0", "vcan1" }
-  // { "can0", "can1" }
+#define CAN_DEVICES \
+    { "vcan0", "vcan1" }
+// { "can0", "can1" }
 
-#define MAIN_THEME 1
-#define TITLE_THEME 2
+#define MAIN_THEME         1
+#define TITLE_THEME        2
 #define FOCUSED_ELEM_THEME 3
 
-#define MIN_WIDTH (70u)
+#define MIN_WIDTH  (70u)
 #define MIN_HEIGHT (25u)
+
+#define ESCAPE_KEY (27)
 
 #define clamp(x, a, b) (((x) < (a)) ? (a) : (((x) > (b)) ? (b) : (x)))
 
-enum application_tabs_t { search_menu, fill_fields_menu, n_application_tabs };
+enum application_tabs_t { main_menu, fill_fields_menu, search_menu, n_application_tabs };
 
 enum interfaces_t { primary_intf, secondary_intf, inverter_intf, n_intf };
 
-#endif // CUSTOM_SENDER_CONFIG_H
+#endif  // CUSTOM_SENDER_CONFIG_H
