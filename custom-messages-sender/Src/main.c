@@ -105,7 +105,6 @@ int main(int argc, char const *argv[]) {
             }
             case search_menu: {
                 switch (user_input) {
-                    case 'm':
                     case ESCAPE_KEY: {
                         memset(searching_buffer, 0, BUFSIZ);
                         searching_buffer_idx = 0;

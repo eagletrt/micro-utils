@@ -366,23 +366,6 @@ int retrieve_input_prompt(int current_focus) {
     delwin(prompt_win);
 }
 
-int find() {
-    switch (chosen_intf) {
-        case primary_intf: {
-            break;
-        }
-        case secondary_intf: {
-            break;
-        }
-        case inverter_intf: {
-            break;
-        }
-        default: {
-            break;
-        }
-    }
-}
-
 int render_main_menu(int current_focus, void *data) {
     bool is_main_menu = (data == NULL);
 
