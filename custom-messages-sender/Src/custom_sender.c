@@ -277,7 +277,7 @@ int action(int current_focus) {
             for (size_t ifield = 0; ifield < MAX_N_FIELDS; ifield++) {
                 memcpy(current_fields[ifield], "0", 2);
             }
-            return current_focus;
+            return 0;
         case main_menu:
             chosen_msg_idx   = current_focus + get_intf_base_idx();
             chosen_interface = chosen_intf;
@@ -286,7 +286,7 @@ int action(int current_focus) {
             for (size_t ifield = 0; ifield < MAX_N_FIELDS; ifield++) {
                 memcpy(current_fields[ifield], "0", 2);
             }
-            return current_focus;
+            return 0;
         case fill_fields_menu:
             if (current_focus < current_n_fields) {
                 retrieve_input_prompt(current_focus);
