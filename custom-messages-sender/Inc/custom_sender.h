@@ -24,7 +24,7 @@
 #define PRINT_INDICATIONS(screen)                                                             \
     const char indications_row_1[] = "Use up and down arrows to browse around";               \
     const char indications_row_2[] = "P to use primary network, I to use inverter network";   \
-    const char indications_row_3[] = "O to use secondary network";                            \
+    const char indications_row_3[] = "O to use secondary network, S to search for a message"; \
     const char indications_row_4[] = "E to edit the current field when a message is chosen";  \
     const char indications_row_5[] = "M to go to menu, H to select past sent a past message"; \
     const char indications_row_6[] = "ENTER to select one message to send, Q to quit";        \
