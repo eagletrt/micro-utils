@@ -269,6 +269,15 @@ void send_message(int current_focus) {
 
 int action(int current_focus) {
     switch (ctab) {
+        case search_menu:
+            // chosen_msg_idx = current_msg_idx + get_intf_base_idx(); // chosen_msg_idx already set
+            chosen_intf      = chosen_intf;
+            current_n_fields = metadata_msgs[chosen_msg_idx].n_fields;
+            ctab             = fill_fields_menu;
+            for (size_t ifield = 0; ifield < MAX_N_FIELDS; ifield++) {
+                memcpy(current_fields[ifield], "0", 2);
+            }
+            return current_focus;
         case main_menu:
             chosen_msg_idx   = current_focus + get_intf_base_idx();
             chosen_interface = chosen_intf;
@@ -277,7 +286,7 @@ int action(int current_focus) {
             for (size_t ifield = 0; ifield < MAX_N_FIELDS; ifield++) {
                 memcpy(current_fields[ifield], "0", 2);
             }
-            return 0;
+            return current_focus;
         case fill_fields_menu:
             if (current_focus < current_n_fields) {
                 retrieve_input_prompt(current_focus);
@@ -287,14 +296,14 @@ int action(int current_focus) {
                 chosen_interface = primary_intf;
                 current_n_fields = -1;
                 ctab             = main_menu;
-                return 0;
+                return current_focus;
             }
-            return current_focus;
     }
 }
 
 int current_focus_dec(int current_focus) {
     switch (ctab) {
+        case search_menu:
         case main_menu:
             return clamp(current_focus - 1, 0, get_intf_tot_msg() - 1);
         case fill_fields_menu:
@@ -375,6 +384,8 @@ int find() {
 }
 
 int render_main_menu(int current_focus, void *data) {
+    bool is_main_menu = (data == NULL);
+
     wclear(stdscr);
     wattrset(stdscr, COLOR_PAIR(MAIN_THEME));
     int current_row = 0;
@@ -385,7 +396,7 @@ int render_main_menu(int current_focus, void *data) {
     current_row++;
     WRITE_CENTERED(stdscr, current_row, title, -1);
     wattrset(stdscr, COLOR_PAIR(MAIN_THEME));
-    if (data == NULL) {
+    if (is_main_menu) {
         PRINT_INDICATIONS(stdscr);
     } else {
         char *searching_string = (char *)data;
@@ -397,13 +408,29 @@ int render_main_menu(int current_focus, void *data) {
         current_row += 2;
     }
 
-    int intf_tot_msg  = get_intf_tot_msg();
-    int intf_base_idx = get_intf_base_idx();
+    int intf_tot_msg      = get_intf_tot_msg();
+    int intf_base_idx     = get_intf_base_idx();
+    size_t actual_written = 0;
 
-    for (size_t iidx = 0; iidx < (n_shown_msgs) && (iidx + current_focus) < intf_tot_msg; iidx++) {
+    for (size_t iidx = 0; actual_written < (n_shown_msgs) && (iidx + current_focus) < intf_tot_msg; iidx++) {
         int showed_msg = current_focus + iidx;
         char *msg_name = metadata_msgs[intf_base_idx + showed_msg].msg_name;
-        WRITE_CENTERED(stdscr, current_row + iidx, msg_name, showed_msg);
+        if (is_main_menu) {
+            WRITE_CENTERED(stdscr, current_row + iidx, msg_name, showed_msg);
+            if (_is_focused) {
+                chosen_msg_idx = intf_base_idx + showed_msg;
+            }
+            actual_written++;
+        } else {
+            char *searching_string = (char *)data;
+            if (!(strstr(msg_name, searching_string) == NULL)) {
+                WRITE_CENTERED(stdscr, current_row + actual_written, msg_name, actual_written);
+                if (_is_focused) {
+                    chosen_msg_idx = intf_base_idx + showed_msg;
+                }
+                actual_written++;
+            }
+        }
     }
     refresh();
 }

@@ -91,7 +91,8 @@ int main(int argc, char const *argv[]) {
                         current_focus = current_focus_inc(current_focus);
                         break;
                     case 's': {
-                        ctab = search_menu;
+                        current_focus = 0;
+                        ctab          = search_menu;
                         break;
                     }
                     case '\n':
@@ -125,7 +126,12 @@ int main(int argc, char const *argv[]) {
                     case KEY_DOWN:
                         current_focus = current_focus_inc(current_focus);
                         break;
+                    case KEY_ENTER:
+                    case '\n':
+                        current_focus = action(current_focus);
+                        break;
                     default: {
+                        current_focus                          = 0;
                         searching_buffer[searching_buffer_idx] = user_input;
                         searching_buffer_idx++;
                         searching_buffer_idx = clamp(searching_buffer_idx, 0, BUFSIZ - 1);
