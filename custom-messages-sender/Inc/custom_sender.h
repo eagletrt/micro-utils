@@ -44,11 +44,11 @@
 
 #include "custom_sender_config.h"
 #include "inverters/inverters_network.h"
-#include "inverters/inverters_utils_c.h"
+#include "inverters/inverters_utils.h"
 #include "primary/primary_network.h"
-#include "primary/primary_utils_c.h"
+#include "primary/primary_utils.h"
 #include "secondary/secondary_network.h"
-#include "secondary/secondary_utils_c.h"
+#include "secondary/secondary_utils.h"
 
 #include <ncurses.h>
 
