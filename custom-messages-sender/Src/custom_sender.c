@@ -217,7 +217,7 @@ void send_message(int current_focus) {
             msgid         = primary_id_from_index(chosen_msg_idx);
             msg.id        = msgid;
             size_t msg_sz = 0;
-            primary_serialize_from_id(msgid, to_serialize, msg.data, &msg_sz);
+            primary_serialize_from_string(msgid, to_serialize, msg.data, &msg_sz);
             msg.size = (uint8_t)msg_sz;
             fill_data(&msg, (char *)final_command, (char *)can_devices[0]);
             can_send_retval = can_send(&msg, can_sockets[0]);
@@ -227,7 +227,7 @@ void send_message(int current_focus) {
             msgid         = secondary_id_from_index(chosen_msg_idx);
             msg.id        = msgid;
             size_t msg_sz = 0;
-            secondary_serialize_from_id(msgid, to_serialize, msg.data, &msg_sz);
+            secondary_serialize_from_string(msgid, to_serialize, msg.data, &msg_sz);
             msg.size = (uint8_t)msg_sz;
             fill_data(&msg, (char *)final_command, (char *)can_devices[1]);
             can_send_retval = can_send(&msg, can_sockets[1]);
@@ -237,7 +237,7 @@ void send_message(int current_focus) {
             msgid         = inverters_id_from_index(chosen_msg_idx);
             msg.id        = msgid;
             size_t msg_sz = 0;
-            inverters_serialize_from_id(msgid, to_serialize, msg.data, &msg_sz);
+            inverters_serialize_from_string(msgid, to_serialize, msg.data, &msg_sz);
             msg.size = (uint8_t)msg_sz;
             fill_data(&msg, (char *)final_command, (char *)can_devices[0]);
             can_send_retval = can_send(&msg, can_sockets[0]);
