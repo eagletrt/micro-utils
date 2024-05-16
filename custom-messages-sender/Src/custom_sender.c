@@ -224,7 +224,7 @@ void send_message(int current_focus) {
             break;
         }
         case secondary_intf: {
-            msgid         = secondary_id_from_index(chosen_msg_idx);
+            msgid         = secondary_id_from_index(chosen_msg_idx - get_intf_base_idx());
             msg.id        = msgid;
             size_t msg_sz = 0;
             secondary_serialize_from_string(msgid, to_serialize, msg.data, &msg_sz);
@@ -234,7 +234,7 @@ void send_message(int current_focus) {
             break;
         }
         case inverter_intf: {
-            msgid         = inverters_id_from_index(chosen_msg_idx);
+            msgid         = inverters_id_from_index(chosen_msg_idx - get_intf_base_idx());
             msg.id        = msgid;
             size_t msg_sz = 0;
             inverters_serialize_from_string(msgid, to_serialize, msg.data, &msg_sz);
@@ -293,6 +293,9 @@ int action(int current_focus) {
             } else {
                 send_message(current_focus);
                 chosen_msg_idx   = -1;
+                if (chosen_msg_idx == inverter_intf) {
+                    current_focus = 0;
+                }
                 chosen_interface = primary_intf;
                 current_n_fields = -1;
                 ctab             = main_menu;

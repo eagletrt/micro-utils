@@ -3,12 +3,12 @@
 
 #include <stdbool.h>
 
-#define GEN_STR_LEN   128
-#define GEN_LABEL_LEN 256
-#define MAX_N_FIELDS  (8 * 8)
-#define SEPARATOR_LEN 120
-#define SUBWIN_WIDTH  80
-#define SUBWIN_HEIGHT 7
+#define GEN_STR_LEN   (128)
+#define GEN_LABEL_LEN (256)
+#define MAX_N_FIELDS  (1024)
+#define SEPARATOR_LEN (120)
+#define SUBWIN_WIDTH  (80)
+#define SUBWIN_HEIGHT (7)
 
 #define WRITE_CENTERED(screen, y, string, focus_id)                       \
     getmaxyx(screen, _scrheight, _scrwidth);                              \
