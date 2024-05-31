@@ -7,7 +7,19 @@ int n_shown_msgs              = 20;
 static_assert(N_CAN_DEVICES == (sizeof(can_devices) / GEN_STR_LEN));
 
 int main(int argc, char const *argv[]) {
+    /* 
+        primary_lv_current_battery_converted_t converted = { .lv_current = 10.0f };
+        primary_lv_current_battery_t raw;
+        primary_lv_current_battery_conversion_to_raw_struct(&raw, &converted);
+        uint8_t msg[8];
+        primary_lv_current_battery_pack(msg, &raw, PRIMARY_LV_CURRENT_BATTERY_BYTE_SIZE);
+        primary_lv_current_battery_unpack(&raw, msg, PRIMARY_LV_CURRENT_BATTERY_BYTE_SIZE);
+        primary_lv_current_battery_raw_to_conversion_struct(&converted, &raw);
+        printf("%f\r\n", converted.lv_current);
+        assert(converted.lv_current == 10.0f);
+     */
     initscr();
+    
     if (!init_canlib_metadata()) {
         fatal_error("Failed to initialize canlib metadata");
     }
