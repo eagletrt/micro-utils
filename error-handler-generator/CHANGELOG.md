@@ -1,5 +1,11 @@
 # Change Log
 
+## [1.3.4] - 04-06-2024
+
+### Fixed
+
+- Change ssize_t type to signed_size_t
+
 ## [1.3.3] - 15-04-2024
 
 ### Fixed

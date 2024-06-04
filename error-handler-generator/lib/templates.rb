@@ -361,7 +361,7 @@ module ErrorGen
           }
           else {
               // Find and remove the error
-              ssize_t i = min_heap_find(&running_errors, &err);
+              signed_size_t i = min_heap_find(&running_errors, &err);
               if (i < 0) return;
               min_heap_remove(&running_errors, i, NULL);
           }

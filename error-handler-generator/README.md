@@ -70,7 +70,7 @@ gem install error_gen.gem    # Install
 
 Then you can run the binary in the `bin` folder to generate the code given the input file:
 ```shell
-./bin/error examples/simple.json
+./bin/error_gen examples/simple.json
 ```
 
 > [!NOTE]
