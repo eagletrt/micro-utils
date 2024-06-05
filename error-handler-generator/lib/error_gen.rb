@@ -21,19 +21,24 @@ class String
     strip!
     self
   end
+
+  def camelize
+    to_s.split('_').collect(&:capitalize).join
+  end
 end
 
 module ErrorGen
   # Critical errors source code generator
   class Generator
     attr_reader :ret_msg, :errors, :gen_dir, :jsonfile
-    attr_accessor :target_name
+    attr_accessor :target_name, :prefix
 
     include ErrorGen::Templates
 
     def initialize(filename = nil)
       @ret_msg = nil
       @target_name = nil
+      @prefix = nil
       @errors = []
 
       return unless filename
@@ -49,6 +54,16 @@ module ErrorGen
       # Get the basename of the generated files
       @gen_dir = File.dirname(@jsonfile = filename)
       @target_name = File.basename(filename, '.json') unless @target_name && !@target_name.empty?
+
+      # Check if prefix is valid
+      valid_prefix = /^[a-zA-Z_]\w*$/
+      unless @prefix.nil? || valid_prefix.match?(@prefix)
+        raise ArgumentError, 'The prefix must be a valid keyword (upper or ' \
+          'lower case characters, underscores and number) and must not start with a number'
+      end
+
+      # Change prefix to lowercase
+      @prefix&.downcase!
 
       # Parse JSON file
       begin

@@ -10,8 +10,7 @@ which is a list of objects, and each object defines a group of errors.
 
 A single error group requires the following fields to be generated correctly:
 
-- `name`: the name of the group (preferably all **upper case**, with words separated by an **underscore**
-    and with a **prefix**; for example `ERROR_FERIE`)
+- `name`: the name of the group (preferably all **upper case**, with words separated by an **underscore** (e.g. `FERIE`)
 - `timeout`: the amount of time that should elapse before the error can be considered expired
 - `instances`: the total number of instances of that group
 

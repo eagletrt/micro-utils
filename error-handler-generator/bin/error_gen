@@ -19,6 +19,10 @@ op = OptionParser.new do |parser|
     generator.target_name = filename
   end
 
+  parser.on('-x', '--prefix PREFIX', 'Specify the prefix to use inside the generate code') do |prefix|
+    generator.prefix = prefix
+  end
+
   parser.on('-h', '--help', 'Display this help and exit') do
     puts parser
     exit

@@ -1,5 +1,11 @@
 # Change Log
 
+## [1.4.0] - 05-06-2024
+
+### Added
+
+- Option to add a prefix to the generated types, macros and functions
+
 ## [1.3.4] - 04-06-2024
 
 ### Fixed
