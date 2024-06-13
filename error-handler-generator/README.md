@@ -74,7 +74,7 @@ Then you can run the binary in the `bin` folder to generate the code given the i
 ```
 
 > [!NOTE]
-> The generated C source files (`.c/.h`) is located in the same folder as the input Json file
+> The generated C source files (`.c/.h`) are located in the same folder as the input Json file
 
 To see all the available options run the following command:
 ```shell

@@ -1,5 +1,15 @@
 # Change Log
 
+## [1.5.0] - 13-06-2024
+
+### Added
+
+- Add function to expire the errors immediately without setting them first
+
+### Fixed
+
+- Running groups counter not decremented when error expires
+
 ## [1.4.0] - 05-06-2024
 
 ### Added

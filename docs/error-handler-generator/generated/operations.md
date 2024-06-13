@@ -50,6 +50,14 @@ the error is added to the buffer of expired errors and removed from the heap, th
 the update timer callback is called if there is at least one error still running, otherwise
 the stop timer callback is called.
 
+### Expire immediate
+
+The **expire immediate** operation requires the group and instance of the error
+that have to be expired.
+
+The given error is then expired immediately even if it is not running but if the
+error has already expired no operation is executed.
+
 ### Routine
 
 The error routine is one of the most important function of all, its purpose is to

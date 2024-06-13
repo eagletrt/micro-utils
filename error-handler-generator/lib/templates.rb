@@ -191,6 +191,14 @@ module ErrorGen
       void <%= @prefix&.+('_').to_s %>error_expire(void);
 
       /**
+       * @brief Set the error as expired immediately even if it is not running
+       *
+       * @param group The group to which the error belongs
+       * @param instance The instance of the error
+       */
+      void <%= @prefix&.+('_').to_s %>error_expire_immediate(<%= @prefix&.camelize.to_s %>ErrorGroup group, <%= @prefix&.camelize.to_s %>ErrorInstance instance);
+
+      /**
        * @brief Routine that updates the internal error states
        *
        * @attention This function should not be called inside interrupts callback
@@ -406,6 +414,7 @@ module ErrorGen
               // Update error info
               top->is_running = false;
               top->is_expired = true;
+              --running_groups[data.group];
               ++expired_groups[data.group];
 
               // Add error to the list of expired errors
@@ -430,6 +439,46 @@ module ErrorGen
           // Update the timer
           if (top != NULL)
               <%= @prefix&.+('_').to_s %>error_update_timer_callback(top->timestamp, timeouts[top->group]);
+      }
+      /**
+       * @brief Expire the error immediately without waiting for the timer
+       *
+       * @param data The data of the error to expire
+       */
+      void _<%= @prefix&.+('_').to_s %>error_expire_immediate(<%= @prefix&.camelize.to_s %>ErrorData data) {
+          // Get error
+          <%= @prefix&.camelize.to_s %>Error * err = &errors[data.group][data.instance];
+          if (err->is_expired)
+              return;
+
+          // Update error info
+          err->is_running = false;
+          err->is_expired = true;
+          --running_groups[data.group];
+          ++expired_groups[data.group];
+
+          // Add error to the list of expired errors
+          if (ring_buffer_push_back(&expired_errors, &err) != RING_BUFFER_OK)
+              break;
+
+          // Remove the error from the list of running errors
+          signed_size_t index = min_heap_find(&running_errors, &err);
+          if (index < 0)
+              return;
+          if (min_heap_remove(&running_errors, index, NULL) != MIN_HEAP_OK)
+              return;
+
+          // Stop the timer if there are no more errors
+          if (min_heap_is_empty(&running_errors)) {
+              <%= @prefix&.+('_').to_s %>error_stop_timer_callback();
+              return;
+          }
+          else if (index == 0) {
+              // Update the timer with the next error data
+              <%= @prefix&.camelize.to_s %>Error ** next = (<%= @prefix&.camelize.to_s %>Error **)min_heap_peek(&running_errors);
+              if (next != NULL)
+                  <%= @prefix&.+('_').to_s %>error_update_timer_callback((*next)->timestamp, timeouts[(*next)->group]);
+          }
       }
 
       void <%= @prefix&.+('_').to_s %>error_init(void (* cs_enter)(void), void (* cs_exit)(void)) {
@@ -528,6 +577,19 @@ module ErrorGen
       void <%= @prefix&.+('_').to_s %>error_expire(void) {
           // Push data to the buffer
           <%= @prefix&.camelize.to_s %>ErrorData data = { .op = _<%= @prefix&.+('_').to_s %>error_expire };
+          if (ring_buffer_push_back(&err_buf, &data) == RING_BUFFER_OK)
+              <%= @prefix&.+('_').to_s %>error_routine();
+      }
+      void <%= @prefix&.+('_').to_s %>error_expire_immediate(<%= @prefix&.camelize.to_s %>ErrorGroup group, <%= @prefix&.camelize.to_s %>ErrorInstance instance) {
+          if (instance >= instances[group])
+              return;
+
+          // Push data to the buffer
+          <%= @prefix&.camelize.to_s %>ErrorData data = {
+              .group = group,
+              .instance = instance,
+              .op = _<%= @prefix&.+('_').to_s %>error_expire_immediate
+          };
           if (ring_buffer_push_back(&err_buf, &data) == RING_BUFFER_OK)
               <%= @prefix&.+('_').to_s %>error_routine();
       }
