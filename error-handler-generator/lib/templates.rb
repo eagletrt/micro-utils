@@ -2,7 +2,70 @@
 
 module ErrorGen
   module Templates
-    # TODO: Refactor
+    def get_error_groups_count(errors)
+      errors.length
+    end
+
+    def get_error_instances_count(errors)
+      # Sum all the instances of each error to get the total
+      errors.map(&:instances).inject(0, &:+)
+    end
+
+    def get_error_groups_count_name(prefix: nil)
+      to_upcase('error_group_count', prefix: prefix)
+    end
+
+    def sanitize(str)
+      if str.nil?
+        return nil
+      end
+      res = str
+      # If string start with number add an underscore
+      if str.match(/\A\d/)
+        res = '_' + str
+      end
+      # Replace spaces and hypens with underscores and remove every other
+      # character that is not alphanumeric
+      res.downcase.gsub('-', '_').gsub(' ', '_').delete('^a-z0-9_').to_s
+    end
+
+    def to_downcase(str, prefix: nil, suffix: nil)
+      # Sanitize strings
+      s_prefix = sanitize(prefix)
+      s_str = sanitize(str)
+      s_suffix = sanitize(suffix)
+
+      s_prefix&.+('_').to_s + s_str.to_s + s_suffix&.prepend('_').to_s
+    end
+
+    def to_upcase(str, prefix: nil, suffix: nil)
+      # Sanitize strings
+      s_prefix = sanitize(prefix)
+      s_str = sanitize(str)
+      s_suffix = sanitize(suffix)
+
+      s_prefix&.+('_')&.upcase.to_s + s_str.upcase.to_s + s_suffix&.prepend('_')&.upcase.to_s
+    end
+
+    # If str is already camelcase the sanitize function will change the string to
+    # lower case which is then camelized (e.g. CamelCase -> Camelcase)
+    def to_camelcase(str, prefix: nil, suffix: nil)
+      # Sanitize strings
+      s_prefix = sanitize(prefix)
+      s_str = sanitize(str)
+      s_suffix = sanitize(suffix)
+
+      s_prefix&.camelize.to_s + s_str.camelize.to_s + s_suffix&.camelize.to_s
+    end
+
+    def to_str_list(errors, each, all)
+      list = []
+      errors.each do |error|
+        list.push(each.(error))
+      end
+      all.(list).to_s
+    end
+
     HEADER = <<~BANNER
       /*******************************************************************************
        * Critical error handler library generator
@@ -12,16 +75,16 @@ module ErrorGen
        * Error_gen version <%= ErrorGen::VERSION %>
        * Generation date: <%= Time.now %>
        * Generated from: <%= @jsonfile %>
-       * With prefix: <%= unless @prefix.nil? then @prefix else 'none' end %>
+       * With prefix: <%= @prefix ? sanitize(@prefix) : 'none' %>
        * The error handler contains:
-       *     - <%= @errors.length %> error groups
-       *     - <%= @errors.map(&:instances).inject(0, &:+) %> total error instances
+       *     - <%= get_error_groups_count(@errors) %> error groups
+       *     - <%= get_error_instances_count(@errors) %> total error instances
        ******************************************************************************/
 
     BANNER
 
     HH = <<~HEADER
-      <% safeguard = @target_name.upcase.gsub('-', '_') + '_H' %>
+      <% safeguard = to_upcase(@target_name, suffix: 'h') %>
       #ifndef <%= safeguard %>
       #define <%= safeguard %>
 
@@ -29,18 +92,13 @@ module ErrorGen
       #include <stdbool.h>
       #include <stddef.h>
       <%
-        tot_instances = 0
-        errors_names = []
-        @errors.each { |error|
-          name = (@prefix&.+('_')&.upcase.to_s) + 'ERROR_GROUP_' + error.name.upcase.gsub('-', '_')
-          errors_names.push(name)
-          tot_instances += error.instances
-        }
-        enum_data = errors_names.join(",\n    ")
+        # Types
+        error_t = to_camelcase('error', prefix: @prefix)
+        group_t = to_camelcase('error_group', prefix: @prefix)
+        instance_t = to_camelcase('error_instance', prefix: @prefix)
       %>
       // Total number of error instances
-      <%= '#define ' + @prefix&.+('_')&.upcase.to_s + 'ERROR_INSTANCE_COUNT ' + tot_instances.to_s %>
-
+      #define <%= to_upcase('error_instance_count', prefix: @prefix) %> <%= get_error_instances_count(@errors) %>
 
       /**
        * @brief Set or reset an instance of an error based on a condition
@@ -52,17 +110,34 @@ module ErrorGen
        * @param instance The instance of the error
        * @param The current time (in ms)
        */
-      #define <%= @prefix&.+('_')&.upcase.to_s %>ERROR_TOGGLE_IF(condition, group, instance, timestamp) \\
-          ((condition) ? <%= @prefix&.+('_').to_s %>error_set(group, instance, timestamp) : <%= @prefix&.+('_').to_s %>error_reset(group, instance))
+      #define <%= to_upcase('error_toggle_if', prefix: @prefix) %>(condition, group, instance, timestamp) \\
+          ((condition) ? <%= to_downcase('error_set', prefix: @prefix) %>(group, instance, timestamp) : <%= to_downcase('error_reset', prefix: @prefix) %>(group, instance))
 
-      /** @brief Type of the error that categorize a group of instances */
+      /**
+       * @brief Type of the error that categorize a group of instances
+       *
+       * @details
+       *     <%=
+                # Generate a list of descriptions for the error list
+                to_str_list(
+                  @errors,
+                  lambda { |error| to_upcase('error_group_' + error.name, prefix: @prefix) + ' no description' },
+                  lambda { |list| list.join('\n *     ') })
+             %>
+       */
       typedef enum {
-          <%= enum_data %>,
-          <%= @prefix&.+('_')&.upcase.to_s %>ERROR_GROUP_COUNT
-      } <%= @prefix&.camelize.to_s %>ErrorGroup;
+          <%=
+            # Generate a list of error groups with a prefix
+            to_str_list(
+              @errors,
+              lambda { |error| to_upcase('error_group_' + error.name, prefix: @prefix) },
+              lambda { |list| list.join(',\n    ') })
+          %>,
+          <%= get_error_groups_count_name(prefix: @prefix) %>
+      } <%= group_t %>;
 
-      // Single error instance type definition
-      typedef uint16_t <%= @prefix&.camelize.to_s %>ErrorInstance;
+      /** @brief Single error instance type definition */
+      typedef uint16_t <%= instance_t %>;
 
       /**
        * @brief Error type definition
@@ -73,11 +148,11 @@ module ErrorGen
        * @param is_expired True if the error has expired, false otherwise
        */
       typedef struct {
-          <%= @prefix&.camelize.to_s %>ErrorGroup group;
+          <%= group_t %> group;
           uint32_t timestamp;
           bool is_running;
           bool is_expired;
-      } <%= @prefix&.camelize.to_s %>Error;
+      } <%= error_t %>;
 
       /**
        * @brief Initialize the internal error handler structures
@@ -88,21 +163,21 @@ module ErrorGen
        * @param cs_enter A pointer to a function that should manage a critical section
        * @param cs_exit A pointer to a function that shuold manage a critical section
        */
-      void <%= @prefix&.+('_').to_s %>error_init(void (* cs_enter)(void), void (* cs_exit)(void));
+      void <%= to_downcase('error_init', prefix: @prefix) %>(void (* cs_enter)(void), void (* cs_exit)(void));
 
       /**
        * @brief Get the number of errors that has been set but they still have to expire
        *
        * @param size_t The number of running errors
        */
-      size_t <%= @prefix&.+('_').to_s %>error_get_running(void);
+      size_t <%= to_downcase('error_get_running', prefix: @prefix) %>(void);
 
       /**
        * @brief Get the number of expired errors
        *
        * @param size_t The number of expired errors
        */
-      size_t <%= @prefix&.+('_').to_s %>error_get_expired(void);
+      size_t <%= to_downcase('error_get_expired', prefix: @prefix) %>(void);
 
       /**
        * @brief Get the number of running error of a specific group
@@ -111,7 +186,7 @@ module ErrorGen
        *
        * @return uint16_t The number of running errors
        */
-      uint16_t <%= @prefix&.+('_').to_s %>error_get_group_running(<%= @prefix&.camelize.to_s %>ErrorGroup group);
+      uint16_t <%= to_downcase('error_get_group_running', prefix: @prefix) %>(<%= group_t %> group);
 
       /**
        * @brief Get the number of expired error of a specific group
@@ -120,7 +195,7 @@ module ErrorGen
        *
        * @return uint16_t The number of running errors
        */
-      uint16_t <%= @prefix&.+('_').to_s %>error_get_group_expired(<%= @prefix&.camelize.to_s %>ErrorGroup group);
+      uint16_t <%= to_downcase('error_get_group_expired', prefix: @prefix) %>(<%= group_t %> group);
 
       /**
        * @brief Get a copy of all the errors that are currently running
@@ -135,7 +210,7 @@ module ErrorGen
        *
        * @return size_t The number of copied errors
        */
-      size_t <%= @prefix&.+('_').to_s %>error_dump_running(<%= @prefix&.camelize.to_s %>Error * out);
+      size_t <%= to_downcase('error_dump_running', prefix: @prefix) %>(<%= error_t %> * out);
 
       /**
        * @brief Get a copy of all the errors that are expired
@@ -150,7 +225,7 @@ module ErrorGen
        *
        * @return size_t The number of copied errors
        */
-      size_t <%= @prefix&.+('_').to_s %>error_dump_expired(<%= @prefix&.camelize.to_s %>Error * out);
+      size_t <%= to_downcase('error_dump_expired', prefix: @prefix) %>(<%= error_t %> * out);
 
       /**
        * @brief Get all the groups in which at least one error is running
@@ -159,7 +234,7 @@ module ErrorGen
        *
        * @return size_t The number of copied groups
        */
-      size_t <%= @prefix&.+('_').to_s %>error_dump_running_groups(<%= @prefix&.camelize.to_s %>ErrorGroup * out);
+      size_t <%= to_downcase('error_dump_running_groups', prefix: @prefix) %>(<%= group_t %> * out);
 
       /**
        * @brief Get all the groups in which at least one error is expired
@@ -168,7 +243,7 @@ module ErrorGen
        *
        * @return size_t The number of copied groups
        */
-      size_t <%= @prefix&.+('_').to_s %>error_dump_expired_groups(<%= @prefix&.camelize.to_s %>ErrorGroup * out);
+      size_t <%= to_downcase('error_dump_expired_groups', prefix: @prefix) %>(<%= group_t %> * out);
 
       /**
        * @brief Set an error which will expire after a certain amount of time (the timeout)
@@ -177,7 +252,7 @@ module ErrorGen
        * @param instance The instance of the error
        * @param The current time (in ms)
        */
-      void <%= @prefix&.+('_').to_s %>error_set(<%= @prefix&.camelize.to_s %>ErrorGroup group, <%= @prefix&.camelize.to_s %>ErrorInstance instance, uint32_t timestamp);
+      void <%= to_downcase('error_set', prefix: @prefix) %>(<%= group_t %> group, <%= instance_t %> instance, uint32_t timestamp);
 
       /**
        * @brief Reset an error to avoid its expiration
@@ -185,10 +260,10 @@ module ErrorGen
        * @param group The group to which the error belongs
        * @param instance The instance of the error
        */
-      void <%= @prefix&.+('_').to_s %>error_reset(<%= @prefix&.camelize.to_s %>ErrorGroup group, <%= @prefix&.camelize.to_s %>ErrorInstance instance);
+      void <%= to_downcase('error_reset', prefix: @prefix) %>(<%= group_t %> group, <%= instance_t %> instance);
 
       /** @brief Set the error as expired */
-      void <%= @prefix&.+('_').to_s %>error_expire(void);
+      void <%= to_downcase('error_expire', prefix: @prefix) %>(void);
 
       /**
        * @brief Set the error as expired immediately even if it is not running
@@ -196,7 +271,7 @@ module ErrorGen
        * @param group The group to which the error belongs
        * @param instance The instance of the error
        */
-      void <%= @prefix&.+('_').to_s %>error_expire_immediate(<%= @prefix&.camelize.to_s %>ErrorGroup group, <%= @prefix&.camelize.to_s %>ErrorInstance instance);
+      void <%= to_downcase('error_expire_immediate', prefix: @prefix) %>(<%= group_t %> group, <%= instance_t %> instance);
 
       /**
        * @brief Routine that updates the internal error states
@@ -206,7 +281,7 @@ module ErrorGen
        *
        * @details This function should be called periodically
        */
-      void <%= @prefix&.+('_').to_s %>error_routine(void);
+      void <%= to_downcase('error_routine', prefix: @prefix) %>(void);
 
       /**
        * @brief Update the timer that should expire the error after a certain amount of time
@@ -218,7 +293,7 @@ module ErrorGen
        * @param timestamp The time in which the error was set (in ms)
        * @param timeout The time that should elapse after the timestamp to expire the error (in ms)
        */
-      void <%= @prefix&.+('_').to_s %>error_update_timer_callback(uint32_t timestamp, uint16_t timeout);
+      void <%= to_downcase('error_update_timer_callback', prefix: @prefix) %>(uint32_t timestamp, uint16_t timeout);
 
       /**
        * @brief Stop the timer that should expire the errors
@@ -227,7 +302,7 @@ module ErrorGen
        *
        * @details This function is called internally when an error is reset or expired
        */
-      void <%= @prefix&.+('_').to_s %>error_stop_timer_callback(void);
+      void <%= to_downcase('error_stop_timer_callback', prefix: @prefix) %>(void);
 
       #endif  // <%= safeguard %>
 
@@ -246,30 +321,14 @@ module ErrorGen
       #include "ring-buffer.h"
       #include "min-heap.h"
       <%
-        instances_arr = []
-        timeouts_arr = []
-        groups_arr = []
-        errors_arrays = []
-        errors_instances = ''
-        errors_init = []
-        @errors.each { |error|
-          name = error.name.upcase.gsub('-', '_')
-          instances_arr.push('[' + @prefix&.+('_')&.upcase.to_s + 'ERROR_GROUP_' + name + '] = ' + error.instances.to_s)
-          timeouts_arr.push('[' + @prefix&.+('_')&.upcase.to_s + 'ERROR_GROUP_' + name + '] = ' + error.timeout.to_s)
-
-          inst_name = @prefix&.+('_').to_s + 'error_' + name.downcase + '_instances'
-          errors_arrays.push(inst_name)
-          errors_instances += 'static ' + @prefix&.camelize.to_s + 'Error ' + inst_name + '[' + error.instances.to_s + "];\n"
-          groups_arr.push('[' + @prefix&.+('_')&.upcase.to_s + 'ERROR_GROUP_' + name + '] = ' + inst_name)
-          errors_init.push('for (size_t i = 0; i < instances[' + @prefix&.+('_')&.upcase.to_s + 'ERROR_GROUP_' + name + ']; ++i)\n        ' + inst_name + '[i].group = ' + @prefix&.+('_')&.upcase.to_s + 'ERROR_GROUP_' + name + ';')
-        }
-        init = errors_init.join("\n    ")
-        instances = instances_arr.join(",\n    ")
-        timeouts = timeouts_arr.join(",\n    ")
-        groups = groups_arr.join(",\n    ")
+        # Types
+        error_t = to_camelcase('error', prefix: @prefix)
+        group_t = to_camelcase('error_group', prefix: @prefix)
+        instance_t = to_camelcase('error_instance', prefix: @prefix)
+        data_t = to_camelcase('error_data', prefix: @prefix)
       %>
       // Ring buffer maximum number of elements
-      #define <%= @prefix&.+('_')&.upcase.to_s %>ERROR_BUFFER_SIZE 16
+      #define <%= to_upcase('error_buffer_size', prefix: @prefix) %> 16
 
       /**
        * @brief Error data type definition needed to manage the errors
@@ -279,39 +338,63 @@ module ErrorGen
        * @param timestamp The current time (in ms)
        * @param op A pointer to the operation that needs to be executed
        */
-      typedef struct _<%= @prefix&.camelize.to_s %>ErrorData {
-          <%= @prefix&.camelize.to_s %>ErrorGroup group;
-          <%= @prefix&.camelize.to_s %>ErrorInstance instance;
+      typedef struct _<%= data_t %> {
+          <%= group_t %> group;
+          <%= instance_t %> instance;
           uint32_t timestamp;
-          void (* op)(struct _<%= @prefix&.camelize.to_s %>ErrorData);
-      } <%= @prefix&.camelize.to_s %>ErrorData;
+          void (* op)(struct _<%= data_t %>);
+      } <%= data_t %>;
 
-      // Total number of instances for each group
+      /** @brief Total number of instances for each group */
       static const uint16_t instances[] = {
-          <%= instances %>
+          <%=
+            # Generate a list of number of instances for each group
+            to_str_list(
+              @errors,
+              lambda { |error| '[' + to_upcase('error_group_' + error.name, prefix: @prefix) + '] = ' + error.instances.to_s },
+              lambda { |list| list.join(',\n    ') })
+          %>
       };
-      // Error timeout for each group
+      /** @brief Error timeout for each group */
       static const uint16_t timeouts[] = {
-          <%= timeouts %>
+          <%=
+            # Generate a list of timeouts for each group
+            to_str_list(
+              @errors,
+              lambda { |error| '[' + to_upcase('error_group_' + error.name, prefix: @prefix) + '] = ' + error.timeout.to_s },
+              lambda { |list| list.join(',\n    ') })
+          %>
       };
 
-      // Errors information
-      <%= errors_instances %>
-      static <%= @prefix&.camelize.to_s %>Error * errors[] = {
-          <%= groups %>
+      /** @brief List of errors where the data is stored */
+      <%=
+        # Generate a list of arrays of errors for each group
+        to_str_list(
+          @errors,
+          lambda { |error| 'static ' + error_t + ' ' + to_downcase('error_' + error.name + '_instances', prefix: @prefix) + '[' + error.instances.to_s + '];' },
+          lambda { |list| list.join('\n') })
+      %>
+      static <%= error_t %> * errors[] = {    
+          <%=
+            # Assign the corresponding instances array to each group
+            to_str_list(
+              @errors,
+              lambda { |error| '[' + to_upcase('error_group_' + error.name, prefix: @prefix) + '] = ' + to_downcase('error_' + error.name + '_instances', prefix: @prefix) },
+              lambda { |list| list.join(',\n    ') })
+          %>
       };
 
-      // Function declaration needed for the min heap
-      int8_t _<%= @prefix&.+('_').to_s %>error_compare(void * a, void * b);
+      /** @brief Function declaration needed for the min heap */
+      int8_t _<%= to_downcase('error_compare', prefix: @prefix) %>(void * a, void * b);
 
       bool routine_lock = false;
-      RingBuffer(<%= @prefix&.camelize.to_s %>ErrorData, <%= @prefix&.+('_')&.upcase.to_s %>ERROR_BUFFER_SIZE) err_buf;
-      RingBuffer(<%= @prefix&.camelize.to_s %>Error *, <%= @prefix&.+('_')&.upcase.to_s %>ERROR_INSTANCE_COUNT) expired_errors = ring_buffer_new(<%= @prefix&.camelize.to_s %>Error *, <%= @prefix&.+('_')&.upcase.to_s %>ERROR_INSTANCE_COUNT, NULL, NULL);
-      MinHeap(<%= @prefix&.camelize.to_s %>Error *, <%= @prefix&.+('_')&.upcase.to_s %>ERROR_INSTANCE_COUNT) running_errors = min_heap_new(<%= @prefix&.camelize.to_s %>Error *, <%= @prefix&.+('_')&.upcase.to_s %>ERROR_INSTANCE_COUNT, _<%= @prefix&.+('_').to_s %>error_compare);
+      RingBuffer(<%= data_t %>, <%= to_upcase('error_buffer_size', prefix: @prefix) %>) err_buf;
+      RingBuffer(<%= error_t %> *, <%= to_upcase('error_instance_count', prefix: @prefix) %>) expired_errors = ring_buffer_new(<%= error_t %> *, <%= to_upcase('error_instance_count', prefix: @prefix) %>, NULL, NULL);
+      MinHeap(<%= error_t %> *, <%= to_upcase('error_instance_count', prefix: @prefix) %>) running_errors = min_heap_new(<%= error_t %> *, <%= to_upcase('error_instance_count', prefix: @prefix) %>, _<%= to_downcase('error_compare', prefix: @prefix) %>);
 
-      // Fast lookup for groups that are running or expired
-      uint16_t running_groups[<%= @prefix&.+('_')&.upcase.to_s %>ERROR_GROUP_COUNT];
-      uint16_t expired_groups[<%= @prefix&.+('_')&.upcase.to_s %>ERROR_GROUP_COUNT];
+      /** @brief Fast lookup for groups that are running or expired */
+      uint16_t running_groups[<%= get_error_groups_count_name(prefix: @prefix) %>];
+      uint16_t expired_groups[<%= get_error_groups_count_name(prefix: @prefix) %>];
 
       /**
        * @brief Compare two errors based on the time when they were set
@@ -323,9 +406,9 @@ module ErrorGen
        * @param dt2 The timeout of the second error
        * @return int32_t The difference between the two expire times
        */
-      int8_t _<%= @prefix&.+('_').to_s %>error_compare(void * a, void * b) {
-          <%= @prefix&.camelize.to_s %>Error * e1 = *(<%= @prefix&.camelize.to_s %>Error **)a;
-          <%= @prefix&.camelize.to_s %>Error * e2 = *(<%= @prefix&.camelize.to_s %>Error **)b;
+      int8_t _<%= to_downcase('error_compare', prefix: @prefix) %>(void * a, void * b) {
+          <%= error_t %> * e1 = *(<%= error_t %> **)a;
+          <%= error_t %> * e2 = *(<%= error_t %> **)b;
           int32_t t1 = e1->timestamp + timeouts[e1->group];
           int32_t t2 = e2->timestamp + timeouts[e2->group];
           return t1 < t2 ? -1 : (t1 == t2 ? 0 : 1);
@@ -336,9 +419,9 @@ module ErrorGen
        *
        * @param data The data of the error to set
        */
-      void _<%= @prefix&.+('_').to_s %>error_set(<%= @prefix&.camelize.to_s %>ErrorData data) {
+      void _<%= to_downcase('error_set', prefix: @prefix) %>(<%= data_t %> data) {
           // Get error
-          <%= @prefix&.camelize.to_s %>Error * err = &errors[data.group][data.instance];
+          <%= error_t %> * err = &errors[data.group][data.instance];
           if (err->is_running || err->is_expired)
               return;
 
@@ -351,9 +434,9 @@ module ErrorGen
           // update timer if the error is the first to expire
           if (min_heap_insert(&running_errors, &err) != MIN_HEAP_OK)
               return;
-          <%= @prefix&.camelize.to_s %>Error ** top = (<%= @prefix&.camelize.to_s %>Error **)min_heap_peek(&running_errors);
+          <%= error_t %> ** top = (<%= error_t %> **)min_heap_peek(&running_errors);
           if (top != NULL && *top == err)
-              <%= @prefix&.+('_').to_s %>error_update_timer_callback(err->timestamp, timeouts[err->group]);
+              <%= to_downcase('error_update_timer_callback', prefix: @prefix) %>(err->timestamp, timeouts[err->group]);
       }
 
       /**
@@ -361,9 +444,9 @@ module ErrorGen
        *
        * @param data The data of the error to reset
        */
-      void _<%= @prefix&.+('_').to_s %>error_reset(<%= @prefix&.camelize.to_s %>ErrorData data) {
+      void _<%= to_downcase('error_reset', prefix: @prefix) %>(<%= data_t %> data) {
           // Get error
-          <%= @prefix&.camelize.to_s %>Error * err = &errors[data.group][data.instance];
+          <%= error_t %> * err = &errors[data.group][data.instance];
           if (!err->is_running || err->is_expired)
               return;
 
@@ -372,7 +455,7 @@ module ErrorGen
           --running_groups[data.group];
 
           // Get the current first element
-          <%= @prefix&.camelize.to_s %>Error * top = NULL;
+          <%= error_t %> * top = NULL;
           if (min_heap_top(&running_errors, &top) != MIN_HEAP_OK)
               return;
 
@@ -383,9 +466,9 @@ module ErrorGen
                   return;
 
               if (min_heap_is_empty(&running_errors))
-                  <%= @prefix&.+('_').to_s %>error_stop_timer_callback();
+                  <%= to_downcase('error_stop_timer_callback', prefix: @prefix) %>();
               else if (min_heap_top(&running_errors, &top) == MIN_HEAP_OK)
-                  <%= @prefix&.+('_').to_s %>error_update_timer_callback(top->timestamp, timeouts[top->group]);
+                  <%= to_downcase('error_update_timer_callback', prefix: @prefix) %>(top->timestamp, timeouts[top->group]);
           }
           else {
               // Find and remove the error
@@ -400,16 +483,16 @@ module ErrorGen
        *
        * @param data The data of the error to expire
        */
-      void _<%= @prefix&.+('_').to_s %>error_expire(<%= @prefix&.camelize.to_s %>ErrorData data) {
+      void _<%= to_downcase('error_expire', prefix: @prefix) %>(<%= data_t %> data) {
           // Get error
-          <%= @prefix&.camelize.to_s %>Error * top = NULL;
+          <%= error_t %> * top = NULL;
           if (min_heap_top(&running_errors, &top) != MIN_HEAP_OK)
               return;
 
           if (!top->is_running || top->is_expired)
               return;
 
-          <%= @prefix&.camelize.to_s %>Error * prev = top;
+          <%= error_t %> * prev = top;
           do {
               // Update error info
               top->is_running = false;
@@ -427,27 +510,27 @@ module ErrorGen
 
               // Stop the timer if there are no more errors
               if (min_heap_is_empty(&running_errors)) {
-                  <%= @prefix&.+('_').to_s %>error_stop_timer_callback();
+                  <%= to_downcase('error_stop_timer_callback', prefix: @prefix) %>();
                   return;
               }
 
               // Get next errors
               if (min_heap_top(&running_errors, &top) != MIN_HEAP_OK)
                   break;
-          } while(_<%= @prefix&.+('_').to_s %>error_compare(&top, &prev) <= 0);
+          } while(_<%= to_downcase('error_compare', prefix: @prefix) %>(&top, &prev) <= 0);
 
           // Update the timer
           if (top != NULL)
-              <%= @prefix&.+('_').to_s %>error_update_timer_callback(top->timestamp, timeouts[top->group]);
+              <%= to_downcase('error_update_timer_callback', prefix: @prefix) %>(top->timestamp, timeouts[top->group]);
       }
       /**
        * @brief Expire the error immediately without waiting for the timer
        *
        * @param data The data of the error to expire
        */
-      void _<%= @prefix&.+('_').to_s %>error_expire_immediate(<%= @prefix&.camelize.to_s %>ErrorData data) {
+      void _<%= to_downcase('error_expire_immediate', prefix: @prefix) %>(<%= data_t %> data) {
           // Get error
-          <%= @prefix&.camelize.to_s %>Error * err = &errors[data.group][data.instance];
+          <%= error_t %> * err = &errors[data.group][data.instance];
           if (err->is_expired)
               return;
 
@@ -470,39 +553,48 @@ module ErrorGen
 
           // Stop the timer if there are no more errors
           if (min_heap_is_empty(&running_errors)) {
-              <%= @prefix&.+('_').to_s %>error_stop_timer_callback();
+              <%= to_downcase('error_stop_timer_callback', prefix: @prefix) %>();
               return;
           }
           else if (index == 0) {
               // Update the timer with the next error data
-              <%= @prefix&.camelize.to_s %>Error ** next = (<%= @prefix&.camelize.to_s %>Error **)min_heap_peek(&running_errors);
+              <%= error_t %> ** next = (<%= error_t %> **)min_heap_peek(&running_errors);
               if (next != NULL)
-                  <%= @prefix&.+('_').to_s %>error_update_timer_callback((*next)->timestamp, timeouts[(*next)->group]);
+                  <%= to_downcase('error_update_timer_callback', prefix: @prefix) %>((*next)->timestamp, timeouts[(*next)->group]);
           }
       }
 
-      void <%= @prefix&.+('_').to_s %>error_init(void (* cs_enter)(void), void (* cs_exit)(void)) {
-          ring_buffer_init(&err_buf, <%= @prefix&.camelize.to_s %>ErrorData, <%= @prefix&.+('_')&.upcase.to_s %>ERROR_BUFFER_SIZE, cs_enter, cs_exit);
+      void <%= to_downcase('error_init', prefix: @prefix) %>(void (* cs_enter)(void), void (* cs_exit)(void)) {
+          ring_buffer_init(&err_buf, <%= data_t %>, <%= to_upcase('error_buffer_size', prefix: @prefix) %>, cs_enter, cs_exit);
 
-          <%= init %>
+          <%=
+            # Initialize all the error instances
+            to_str_list(
+              @errors,
+              lambda { |error|
+                'for (size_t i = 0; i < instances[' + to_upcase('error_group_' + error.name, prefix: @prefix) + ']; ++i)\n        ' +
+                to_downcase('error_' + error.name + '_instances', prefix: @prefix) + '[i].group = ' + to_upcase('error_group_' + error.name, prefix: @prefix) + ';'
+              },
+              lambda { |list| list.join('\n    ') })
+          %>
       }
-      size_t <%= @prefix&.+('_').to_s %>error_get_running(void) {
+      size_t <%= to_downcase('error_get_running', prefix: @prefix) %>(void) {
           return min_heap_size(&running_errors);
       }
-      size_t <%= @prefix&.+('_').to_s %>error_get_expired(void) {
+      size_t <%= to_downcase('error_get_expired', prefix: @prefix) %>(void) {
           return ring_buffer_size(&expired_errors);
       }
-      uint16_t <%= @prefix&.+('_').to_s %>error_get_group_running(<%= @prefix&.camelize.to_s %>ErrorGroup group) {
-          if (group >= <%= @prefix&.+('_')&.upcase.to_s %>ERROR_GROUP_COUNT)
+      uint16_t <%= to_downcase('error_get_group_running', prefix: @prefix) %>(<%= group_t %> group) {
+          if (group >= <%= get_error_groups_count_name(prefix: @prefix) %>)
               return 0U;
           return running_groups[group];
       }
-      uint16_t <%= @prefix&.+('_').to_s %>error_get_group_expired(<%= @prefix&.camelize.to_s %>ErrorGroup group) {
-          if (group >= <%= @prefix&.+('_')&.upcase.to_s %>ERROR_GROUP_COUNT)
+      uint16_t <%= to_downcase('error_get_group_expired', prefix: @prefix) %>(<%= group_t %> group) {
+          if (group >= <%= get_error_groups_count_name(prefix: @prefix) %>)
               return 0U;
           return expired_groups[group];
       }
-      size_t <%= @prefix&.+('_').to_s %>error_dump_running(<%= @prefix&.camelize.to_s %>Error * out) {
+      size_t <%= to_downcase('error_dump_running', prefix: @prefix) %>(<%= error_t %> * out) {
           if (out == NULL)
               return 0U;
 
@@ -514,7 +606,7 @@ module ErrorGen
           err_buf.cs_exit();
           return i;
       }
-      size_t <%= @prefix&.+('_').to_s %>error_dump_expired(<%= @prefix&.camelize.to_s %>Error * out) {
+      size_t <%= to_downcase('error_dump_expired', prefix: @prefix) %>(<%= error_t %> * out) {
           if (out == NULL)
               return 0U;
 
@@ -526,74 +618,74 @@ module ErrorGen
           err_buf.cs_exit();
           return i;
       }
-      size_t <%= @prefix&.+('_').to_s %>error_dump_running_groups(<%= @prefix&.camelize.to_s %>ErrorGroup * out) {
+      size_t <%= to_downcase('error_dump_running_groups', prefix: @prefix) %>(<%= group_t %> * out) {
           if (out == NULL)
               return 0U;
           // Copy data
           size_t cnt = 0;
-          for (size_t i = 0; i < <%= @prefix&.+('_')&.upcase.to_s %>ERROR_GROUP_COUNT; ++i)
+          for (size_t i = 0; i < <%= get_error_groups_count_name(prefix: @prefix) %>; ++i)
               if (running_groups[i] > 0)
                   out[cnt++] = i;
           return cnt;
       }
-      size_t <%= @prefix&.+('_').to_s %>error_dump_expired_groups(<%= @prefix&.camelize.to_s %>ErrorGroup * out) {
+      size_t <%= to_downcase('error_dump_expired_groups', prefix: @prefix) %>(<%= group_t %> * out) {
           if (out == NULL)
               return 0U;
           // Copy data
           size_t cnt = 0;
-          for (size_t i = 0; i < <%= @prefix&.+('_')&.upcase.to_s %>ERROR_GROUP_COUNT; ++i)
+          for (size_t i = 0; i < <%= get_error_groups_count_name(prefix: @prefix) %>; ++i)
               if (expired_groups[i] > 0)
                   out[cnt++] = i;
           return cnt;
       }
-      void <%= @prefix&.+('_').to_s %>error_set(<%= @prefix&.camelize.to_s %>ErrorGroup group, <%= @prefix&.camelize.to_s %>ErrorInstance instance, uint32_t timestamp) {
-          if (group >= <%= @prefix&.+('_')&.upcase.to_s %>ERROR_GROUP_COUNT || instance >= instances[group])
+      void <%= to_downcase('error_set', prefix: @prefix) %>(<%= group_t %> group, <%= instance_t %> instance, uint32_t timestamp) {
+          if (group >= <%= get_error_groups_count_name(prefix: @prefix) %> || instance >= instances[group])
               return;
 
           // Push data to the buffer
-          <%= @prefix&.camelize.to_s %>ErrorData data = {
+          <%= data_t %> data = {
               .group = group,
               .instance = instance,
               .timestamp = timestamp,
-              .op = _<%= @prefix&.+('_').to_s %>error_set
+              .op = _<%= to_downcase('error_set', prefix: @prefix) %>
           };
           if (ring_buffer_push_back(&err_buf, &data) == RING_BUFFER_OK)
-              <%= @prefix&.+('_').to_s %>error_routine();
+              <%= to_downcase('error_routine', prefix: @prefix) %>();
       }
-      void <%= @prefix&.+('_').to_s %>error_reset(<%= @prefix&.camelize.to_s %>ErrorGroup group, <%= @prefix&.camelize.to_s %>ErrorInstance instance) {
+      void <%= to_downcase('error_reset', prefix: @prefix) %>(<%= group_t %> group, <%= instance_t %> instance) {
           if (instance >= instances[group])
               return;
 
           // Push data to the buffer
-          <%= @prefix&.camelize.to_s %>ErrorData data = {
+          <%= data_t %> data = {
               .group = group,
               .instance = instance,
               .timestamp = 0,
-              .op = _<%= @prefix&.+('_').to_s %>error_reset
+              .op = _<%= to_downcase('error_reset', prefix: @prefix) %>
           };
           if (ring_buffer_push_back(&err_buf, &data) == RING_BUFFER_OK)
-              <%= @prefix&.+('_').to_s %>error_routine();
+              <%= to_downcase('error_routine', prefix: @prefix) %>();
       }
-      void <%= @prefix&.+('_').to_s %>error_expire(void) {
+      void <%= to_downcase('error_expire', prefix: @prefix) %>(void) {
           // Push data to the buffer
-          <%= @prefix&.camelize.to_s %>ErrorData data = { .op = _<%= @prefix&.+('_').to_s %>error_expire };
+          <%= data_t %> data = { .op = _<%= to_downcase('error_expire', prefix: @prefix) %> };
           if (ring_buffer_push_back(&err_buf, &data) == RING_BUFFER_OK)
-              <%= @prefix&.+('_').to_s %>error_routine();
+              <%= to_downcase('error_routine', prefix: @prefix) %>();
       }
-      void <%= @prefix&.+('_').to_s %>error_expire_immediate(<%= @prefix&.camelize.to_s %>ErrorGroup group, <%= @prefix&.camelize.to_s %>ErrorInstance instance) {
+      void <%= to_downcase('error_expire_immediate', prefix: @prefix) %>(<%= group_t %> group, <%= instance_t %> instance) {
           if (instance >= instances[group])
               return;
 
           // Push data to the buffer
-          <%= @prefix&.camelize.to_s %>ErrorData data = {
+          <%= data_t %> data = {
               .group = group,
               .instance = instance,
-              .op = _<%= @prefix&.+('_').to_s %>error_expire_immediate
+              .op = _<%= to_downcase('error_expire_immediate', prefix: @prefix) %>
           };
           if (ring_buffer_push_back(&err_buf, &data) == RING_BUFFER_OK)
-              <%= @prefix&.+('_').to_s %>error_routine();
+              <%= to_downcase('error_routine', prefix: @prefix) %>();
       }
-      void <%= @prefix&.+('_').to_s %>error_routine(void) {
+      void <%= to_downcase('error_routine', prefix: @prefix) %>(void) {
           // Avoid multiple execution of the routine
           if (routine_lock)
               return;
@@ -606,15 +698,15 @@ module ErrorGen
           }
 
           // Execute the right function for the error
-          <%= @prefix&.camelize.to_s %>ErrorData err;
+          <%= data_t %> err;
           if (ring_buffer_pop_front(&err_buf, &err) == RING_BUFFER_OK)
               err.op(err);
 
           routine_lock = false;
       }
 
-      __attribute__((weak)) void <%= @prefix&.+('_').to_s %>error_update_timer_callback(uint32_t timestamp, uint16_t timeout) { }
-      __attribute__((weak)) void <%= @prefix&.+('_').to_s %>error_stop_timer_callback(void) { }
+      __attribute__((weak)) void <%= to_downcase('error_update_timer_callback', prefix: @prefix) %>(uint32_t timestamp, uint16_t timeout) { }
+      __attribute__((weak)) void <%= to_downcase('error_stop_timer_callback', prefix: @prefix) %>(void) { }
 
     SOURCE
   end

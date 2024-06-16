@@ -1,5 +1,11 @@
 # Change Log
 
+## [1.5.1] - 16-06-2024
+
+### Refactor
+
+- Template code refactoring
+
 ## [1.5.0] - 13-06-2024
 
 ### Added
