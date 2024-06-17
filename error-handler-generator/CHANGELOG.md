@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.6.1] - 17-06-2024
+
+### Fixed
+
+- Running groups counter decremented inside the expire immediate function even if
+the error was not running
+
 ## [1.6.0] - 17-06-2024
 
 ### Added

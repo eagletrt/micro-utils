@@ -555,10 +555,12 @@ module ErrorGen
               return;
 
           // Update error info
-          err->is_running = false;
           err->is_expired = true;
-          --running_groups[data.group];
           ++expired_groups[data.group];
+          if (err->is_running) {
+              err->is_running = false;
+              --running_groups[data.group];
+          }
 
           // Add error to the list of expired errors
           if (ring_buffer_push_back(&expired_errors, &err) != RING_BUFFER_OK)
