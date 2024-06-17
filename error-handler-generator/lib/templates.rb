@@ -58,10 +58,11 @@ module ErrorGen
       s_prefix&.camelize.to_s + s_str.camelize.to_s + s_suffix&.camelize.to_s
     end
 
-    def to_str_list(errors, each, all)
+    def to_str_list(src, each, all)
+      return unless src
       list = []
-      errors.each do |error|
-        list.push(each.(error))
+      src.each do |str|
+        list.push(each.(str))
       end
       all.(list).to_s
     end
@@ -121,7 +122,10 @@ module ErrorGen
                 # Generate a list of descriptions for the error list
                 to_str_list(
                   @errors,
-                  lambda { |error| to_upcase('error_group_' + error.name, prefix: @prefix) + ' no description' },
+                  lambda { |error|
+                    '- ' + to_upcase('error_group_' + error.name, prefix: @prefix) + ' ' +
+                    (error.description ? error.description : 'no description')
+                  },
                   lambda { |list| list.join('\n *     ') })
              %>
        */
@@ -136,6 +140,22 @@ module ErrorGen
           <%= get_error_groups_count_name(prefix: @prefix) %>
       } <%= group_t %>;
 
+      <% @errors.each do |error| next if error.details.empty? %>
+      /** @brief Aliases for the <%= to_downcase(error.name) %> error group instances */
+      typedef enum {
+          <%=
+            # Generate a enums with the instance aliases for each error group if defined
+            to_str_list(
+              error.details,
+              lambda { |info|
+                to_upcase('error_' + error.name + '_instance_' + info.alias, prefix: @prefix) +
+                ' = ' + info.id.to_s
+              },
+              lambda { |list| list.join(',\n    ') })
+          %>
+      } <%= to_camelcase('error_' + error.name + '_instance_alias', prefix: @prefix) %>;
+
+      <% end %>
       /** @brief Single error instance type definition */
       typedef uint16_t <%= instance_t %>;
 
@@ -542,7 +562,7 @@ module ErrorGen
 
           // Add error to the list of expired errors
           if (ring_buffer_push_back(&expired_errors, &err) != RING_BUFFER_OK)
-              break;
+              return;
 
           // Remove the error from the list of running errors
           signed_size_t index = min_heap_find(&running_errors, &err);

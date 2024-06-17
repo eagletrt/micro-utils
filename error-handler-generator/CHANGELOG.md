@@ -1,5 +1,17 @@
 # Change Log
 
+## [1.6.0] - 17-06-2024
+
+### Added
+
+- Better console logging in case of errors, warnings or info
+- Custom optional description for each error group
+- Optional enum aliases for the error groups instances
+
+### Fixed
+
+- Break instead of return inside _error_expire_immediate function
+
 ## [1.5.1] - 16-06-2024
 
 ### Refactor

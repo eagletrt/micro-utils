@@ -10,6 +10,7 @@ list of critical errors and give as output the **C code** that handles them.
 ## Dependencies
 
 The generated library depends of the following libraries, that can be found on the [micro-libs](https://github.com/eagletrt/micro-libs) repository:
+
 - [ring-buffer](https://github.com/eagletrt/micro-libs/tree/master/ring-buffer)
 - [min-heap](https://github.com/eagletrt/micro-libs/tree/master/min-heap)
 
@@ -41,17 +42,46 @@ The Json file has the following format:
         {
             "name": "NAME",
             "timeout": 100,
-            "instances": 10
+            "description": "Description",
+            "instances": 10,
+            "details": [
+                {
+                    "id": 0,
+                    "alias": "FIRST_INSTANCE_ALIAS"
+                },
+                {
+                    "id": 3,
+                    "alias": "FOURTH_INSTANCE_ALIAS"
+                }
+            ]
         },
         ...
     ]
 }
 ```
 
-The `errors` array contains the list of errors and each error is defined by:
+The `errors` array contains the list of error groups and their corresponding data,
+some fields are mandatory, if one of the necessary fields is missing the corresponding
+error is ignored by the generator and it will not appear inside the code, other fields
+are optionals and can be omitted.
+
+The mandatory fields are:
+
 1. `name`: The name of the error group in uppercase with (or without) underscores
 2. `timeout`: How much time should elapse (in ms) before the error expire (to avoid false positives)
-3. `instances`: The number of error instances for that group
+3. `instances`: The total number of error instances for that group
+
+Other optional fields are:
+
+1. `description`: A description of the error group which is inserted inside a comment for documentation purposes
+2. `details`: An array of aliases for the error instances, for each element two fields needs to be specified:
+    - `id`: The index of the instance
+    - `alias`: The alias that can be used to identify the instance
+
+> [!NOTE]
+> For each error in which the aliases are specified a new enum is generated inside
+> the code, this is useful especially if you need to give meaning to an error instance
+> instead of using just a number (e.g. ERROR_PRESSURE_INSTANCE_FRONT_LEFT instead of 0 for a vehicle tires pressure error)
 
 ## Usage
 

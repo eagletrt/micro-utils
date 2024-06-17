@@ -5,6 +5,7 @@
 require 'erb'
 require 'json'
 
+require File.expand_path('master_logger.rb', __dir__)
 require File.expand_path('error.rb', __dir__)
 require File.expand_path('templates.rb', __dir__)
 require File.expand_path('version.rb', __dir__)
@@ -49,7 +50,10 @@ module ErrorGen
 
     # Parse the input file
     def parse(filename)
-      raise ArgumentError, 'File must be in JSON format' unless File.extname(filename) == '.json'
+      unless File.extname(filename) == '.json'
+        @ret_msg = 'file must be in JSON format'
+        return nil
+      end
 
       # Get the basename of the generated files
       @gen_dir = File.dirname(@jsonfile = filename)
@@ -58,8 +62,9 @@ module ErrorGen
       # Check if prefix is valid
       valid_prefix = /^[a-zA-Z_]\w*$/
       unless @prefix.nil? || valid_prefix.match?(@prefix)
-        raise ArgumentError, 'The prefix must be a valid keyword (upper or ' \
-          'lower case characters, underscores and number) and must not start with a number'
+        @ret_msg = 'the prefix must be a valid keyword (upper or ' \
+          'lower case characters, underscores and numbers) and must not start with a number'
+        return nil
       end
 
       # Change prefix to lowercase
@@ -70,20 +75,59 @@ module ErrorGen
         json = JSON.parse(File.read(filename))
         fetch_data(json)
       rescue JSON::ParserError
-        @ret_msg = 'Error while parsing JSON'
-        nil
+        @ret_msg = 'error while parsing the JSON file'
+        return nil
       end
     end
 
     def fetch_data(json)
-      # Save data
       json['errors'].each do |error|
         name = error['name']
         timeout = error['timeout']
         instances = error['instances']
+        description = error['description']
+        details = { }
 
         # Ignore errors with missing fields
-        @errors.push(Error.new(name, timeout, instances)) unless name.nil? || timeout.nil? || instances.nil?
+        if name.nil? || timeout.nil? || instances.nil?
+          ErrorGen::MasterLogger.warn('user defined error with missing fields')
+          next
+        end
+
+        # Check error details
+        error['details']&.each do |info|
+          id = info['id']
+          alias_name = info['alias']
+
+          # Ingore missing fields
+          if id.nil? || alias_name.nil?
+            ErrorGen::MasterLogger.warn("missing fields inside #{name} error group details")
+            next
+          end
+          # Ingore duplicates
+          if details.key?(id)
+            ErrorGen::MasterLogger.warn("duplicate fields for alias #{alias_name} with id #{id} in the #{name} error group")
+            next
+          end
+          # Check if the id is a possible instance index
+          if id < 0 || id >= instances
+            ErrorGen::MasterLogger.warn("invalid id #{id} for the alias #{alias_name} in the #{name} error group")
+            next
+          end
+
+          details[id] = alias_name
+        end
+
+        # Save data
+        @errors.push(
+          Error.new(
+            name,
+            timeout,
+            instances,
+            description: description,
+            details: details
+          )
+        ) 
       end
     end
 

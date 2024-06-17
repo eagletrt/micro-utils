@@ -14,6 +14,7 @@ The folder structure is as follow:
     - `error_gen.rb`: the generator class
     - `templates.rb`: the templates used to generate code
     - `version.rb`: the current version of the library
+    - `master_logger.rb`: just a static wrapper to the ruby logger class
 - `error_gen.gemspec`: file used by gem to build and install this project
 
 ## Parsing

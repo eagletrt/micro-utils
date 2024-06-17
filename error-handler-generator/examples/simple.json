@@ -3,7 +3,18 @@
         {
             "name": "FIRST",
             "timeout": 100,
-            "instances": 10
+            "description": "The first error with a bunch of instances",
+            "instances": 10,
+            "details": [
+                {
+                    "id": 0,
+                    "alias": "FIRST_A"
+                },
+                {
+                    "id": 3,
+                    "alias": "FIRST_B"
+                }
+            ]
         },
         {
             "name": "SECOND",
@@ -13,7 +24,13 @@
         {
             "name": "THIRD",
             "timeout": 2000,
-            "instances": 1
+            "instances": 1,
+            "details": [
+                {
+                    "id": 0,
+                    "alias": "THIRD"
+                }
+            ]
         }
     ]
 }

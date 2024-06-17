@@ -2,8 +2,12 @@
 
 # frozen_string_literal: true
 
+require 'master_logger'
 require 'error_gen'
 require 'optparse'
+
+# Setup logger
+ErrorGen::MasterLogger.setup
 
 generator = ErrorGen::Generator.new
 
@@ -38,37 +42,37 @@ op.parse!
 
 # Check input file
 unless ARGV[0]
-  warn "[ERROR]: A path to a file is needed!\n\n"
+  ErrorGen::MasterLogger.error('missing file path')
   warn op
   exit 1
 end
 unless File.exist? ARGV[0]
-  warn "[ERROR]: #{ARGV[0]} does not exist!\n\n"
+  ErrorGen::MasterLogger.error("#{ARGV[0]} does not exists")
   warn op
   exit 2
 end
 if File.extname(ARGV[0]) != '.json'
-  warn "[ERROR]: #{ARGV[0]} is not an JSON file!\n\n"
+  ErrorGen::MasterLogger.error("#{ARGV[0]} is not a JSON file")
   warn op
   exit 3
 end
 
 # Parse file
 unless generator.parse(ARGV[0])
-  warn "[ERROR]: Cannot parse the file #{ARGV[0]}: #{generator.ret_msg}\n"
+  ErrorGen::MasterLogger.error("unable to parse #{ARGV[0]}: #{generator.ret_msg}")
   exit 4
 end
 
-puts "Generating header file...\n"
+ErrorGen::MasterLogger.info('generating header file...')
 unless generator.generate_h
-  warn "[ERROR]: Cannot generate the header file: #{generator.ret_msg}\n"
+  ErrorGen::MasterLogger.error("unable to generate the header file: #{generator.ret_msg}")
   exit 5
 end
-puts "Header file generated correctly\n"
+ErrorGen::MasterLogger.info('header file generated correctly')
 
-puts "Generating source file...\n"
+ErrorGen::MasterLogger.info('generating source file...')
 unless generator.generate_c
-  warn "[ERROR]: Cannot generate the source file: #{generator.ret_msg}\n"
+  ErrorGen::MasterLogger.error("unable to generate the source file: #{generator.ret_msg}")
   exit 6
 end
-puts "Source file generated correctly\n"
+ErrorGen::MasterLogger.info('source file generated correctly')
