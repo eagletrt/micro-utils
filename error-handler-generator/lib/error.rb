@@ -6,7 +6,7 @@ module ErrorGen
   class Error
     attr_reader :details
     attr_accessor :name, :timeout, :instances, :description
-    
+
     # Info about a single instance of a single error
     class InstanceDetails
       attr_accessor :id, :alias

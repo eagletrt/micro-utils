@@ -76,7 +76,7 @@ module ErrorGen
         fetch_data(json)
       rescue JSON::ParserError
         @ret_msg = 'error while parsing the JSON file'
-        return nil
+        nil
       end
     end
 
@@ -86,7 +86,7 @@ module ErrorGen
         timeout = error['timeout']
         instances = error['instances']
         description = error['description']
-        details = { }
+        details = {}
 
         # Ignore errors with missing fields
         if name.nil? || timeout.nil? || instances.nil?
@@ -106,11 +106,12 @@ module ErrorGen
           end
           # Ingore duplicates
           if details.key?(id)
-            ErrorGen::MasterLogger.warn("duplicate fields for alias #{alias_name} with id #{id} in the #{name} error group")
+            ErrorGen::MasterLogger.warn("duplicate fields for alias #{alias_name}
+                                        with id #{id} in the #{name} error group")
             next
           end
           # Check if the id is a possible instance index
-          if id < 0 || id >= instances
+          if id.negative? || id >= instances
             ErrorGen::MasterLogger.warn("invalid id #{id} for the alias #{alias_name} in the #{name} error group")
             next
           end
@@ -127,7 +128,7 @@ module ErrorGen
             description: description,
             details: details
           )
-        ) 
+        )
       end
     end
 

@@ -4,7 +4,7 @@
  * https://github.com/eagletrt/micro-utils/tree/master/error-handler-generator
  *
  * Error_gen version 1.6.1
- * Generation date: 2024-06-17 13:04:06 +0200
+ * Generation date: 2024-06-20 00:34:32 +0200
  * Generated from: examples/simple.json
  * With prefix: none
  * The error handler contains:
@@ -54,7 +54,7 @@ static const uint16_t timeouts[] = {
 static Error error_first_instances[10];
 static Error error_second_instances[108];
 static Error error_third_instances[1];
-static Error * errors[] = {    
+static Error * errors[] = {
     [ERROR_GROUP_FIRST] = error_first_instances,
     [ERROR_GROUP_SECOND] = error_second_instances,
     [ERROR_GROUP_THIRD] = error_third_instances

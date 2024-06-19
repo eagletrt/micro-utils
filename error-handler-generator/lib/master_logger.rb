@@ -1,13 +1,15 @@
+# frozen_string_literal: true
+
 require 'logger'
 
 module ErrorGen
   # Static class used to log info, warnings and errors to the terminal
   class MasterLogger
-    @@log = Logger.new(STDERR)
+    @log = Logger.new($stderr)
 
     def self.setup(log_level = Logger::INFO)
-      @@log.level = log_level
-      @@log.formatter = proc do |severity, datetime, progname, msg|
+      @log.level = log_level
+      @log.formatter = proc do |severity, _datetime, _progname, msg|
         case severity
         when 'ANY'
           "\033[1;35m[UNKNOWN]\033[0m: #{msg}\n"
@@ -26,28 +28,27 @@ module ErrorGen
     end
 
     def self.unknown(msg)
-      @@log.unknown(msg)
+      @log.unknown(msg)
     end
 
     def self.fatal(msg)
-      @@log.fatal(msg)
+      @log.fatal(msg)
     end
 
     def self.error(msg)
-      @@log.error(msg)
+      @log.error(msg)
     end
 
     def self.warn(msg)
-      @@log.warn(msg)
+      @log.warn(msg)
     end
 
     def self.info(msg)
-      @@log.info(msg)
+      @log.info(msg)
     end
 
     def self.debug(msg)
-      @@log.debug(msg)
+      @log.debug(msg)
     end
-
   end
 end

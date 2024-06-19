@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module ErrorGen
+  # Template for the source and header files generation
   module Templates
     def get_error_groups_count(errors)
       errors.length
@@ -16,14 +17,11 @@ module ErrorGen
     end
 
     def sanitize(str)
-      if str.nil?
-        return nil
-      end
+      return nil if str.nil?
+
       res = str
       # If string start with number add an underscore
-      if str.match(/\A\d/)
-        res = '_' + str
-      end
+      res = "_#{str}" if str.match(/\A\d/)
       # Replace spaces and hypens with underscores and remove every other
       # character that is not alphanumeric
       res.downcase.gsub('-', '_').gsub(' ', '_').delete('^a-z0-9_').to_s
@@ -60,11 +58,12 @@ module ErrorGen
 
     def to_str_list(src, each, all)
       return unless src
+
       list = []
       src.each do |str|
-        list.push(each.(str))
+        list.push(each.call(str))
       end
-      all.(list).to_s
+      all.call(list).to_s
     end
 
     HEADER = <<~BANNER
@@ -394,7 +393,7 @@ module ErrorGen
           lambda { |error| 'static ' + error_t + ' ' + to_downcase('error_' + error.name + '_instances', prefix: @prefix) + '[' + error.instances.to_s + '];' },
           lambda { |list| list.join('\n') })
       %>
-      static <%= error_t %> * errors[] = {    
+      static <%= error_t %> * errors[] = {
           <%=
             # Assign the corresponding instances array to each group
             to_str_list(
