@@ -10,6 +10,8 @@ add_executable(${PROJECT_NAME}
     can/lib/secondary/secondary_utils.c
     can/lib/inverters/inverters_network.c
     can/lib/inverters/inverters_utils.c
+    can/lib/bms/bms_network.c
+    can/lib/bms/bms_utils.c
 )
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Inc

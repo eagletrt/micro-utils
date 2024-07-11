@@ -90,6 +90,12 @@ int main(int argc, char const *argv[]) {
                             chosen_intf   = inverter_intf;
                         }
                         break;
+                    case 'u':
+                        if (ctab == main_menu) {
+                            current_focus = 0;
+                            chosen_intf   = bms_intf;
+                        }
+                        break;
                     case ESCAPE_KEY:
                     case 'm':
                         ctab = main_menu;

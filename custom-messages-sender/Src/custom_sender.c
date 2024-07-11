@@ -67,36 +67,53 @@ int get_intf_tot_msg() {
             return secondary_MESSAGE_COUNT;
         case inverter_intf:
             return inverters_MESSAGE_COUNT;
+        case bms_intf:
+            return bms_MESSAGE_COUNT;
+        default:
+            return 0;
     }
-    return 0;
 }
 
 int get_intf_base_idx() {
+    int base = 0U;
     switch (chosen_intf) {
-        case primary_intf:
-            return 0;
-        case secondary_intf:
-            return primary_MESSAGE_COUNT;
+        case bms_intf:
+            base += inverters_MESSAGE_COUNT;
+            ; // Missing break is intentional
         case inverter_intf:
-            return primary_MESSAGE_COUNT + secondary_MESSAGE_COUNT;
+            base += secondary_MESSAGE_COUNT;
+            ; // Missing break is intentional
+        case secondary_intf:
+            base += primary_MESSAGE_COUNT;
+            ; // Missing break is intentional
+        default:
+            return base;
     }
-    return 0;
 }
 
 int get_idx_from_intf(int bidx, enum interfaces_t intf) {
+    int base = bidx;
     switch (intf) {
-        case primary_intf:
-            return bidx;
-        case secondary_intf:
-            return primary_MESSAGE_COUNT + bidx;
+        case bms_intf:
+            base += inverters_MESSAGE_COUNT;
+            ; // Missing break is intentional
         case inverter_intf:
-            return primary_MESSAGE_COUNT + secondary_MESSAGE_COUNT + bidx;
+            base += secondary_MESSAGE_COUNT;
+            ; // Missing break is intentional
+        case secondary_intf:
+            base += primary_MESSAGE_COUNT;
+            ; // Missing break is intentional
+        default:
+            return base;
     }
 }
 
 int init_canlib_metadata(void) {
     for (size_t iidx = 0; iidx < primary_MESSAGE_COUNT; iidx++) {
         uint16_t id                  = primary_id_from_index(iidx);
+        if (id == 0xFF) {
+            fatal_error("Could not retrieve primary message id from index");
+        }
         int imsg                     = get_idx_from_intf(iidx, primary_intf);
         int n_field                  = primary_n_fields_from_id(id);
         metadata_msgs[imsg].n_fields = n_field;
@@ -182,6 +199,36 @@ int init_canlib_metadata(void) {
             }
         }
     }
+    for (size_t iidx = 0; iidx < bms_MESSAGE_COUNT; iidx++) {
+        uint16_t id = bms_id_from_index(iidx);
+        if (id == 0xFF) {
+            fatal_error("Could not retrieve bms message id from index");
+        }
+        int imsg                     = get_idx_from_intf(iidx, bms_intf);
+        int n_field                  = bms_n_fields_from_id(id);
+        metadata_msgs[imsg].n_fields = n_field;
+        metadata_msgs[imsg].msg_name = (char *)malloc(GEN_STR_LEN * sizeof(char));
+        if (!bms_message_name_from_id(id, metadata_msgs[imsg].msg_name)) {
+            fprintf(stderr, "Could not retrieve bms message name from id %d\n", (int)id);
+            return 0;
+        }
+        metadata_msgs[imsg].fields_type = (int *)malloc(n_field * sizeof(int));
+        if (n_field > 0) {
+            if (bms_fields_types_from_id(id, metadata_msgs[imsg].fields_type, n_field) == 0) {
+                fprintf(stderr, "Could not retrieve bms fields types from id %d\n", (int)id);
+                return 0;
+            }
+            metadata_msgs[imsg].fields_name = (char **)malloc(n_field * sizeof(char *));
+            for (size_t ifield = 0; ifield < n_field; ifield++) {
+                metadata_msgs[imsg].fields_name[ifield] = (char *)malloc(GEN_STR_LEN * sizeof(char));
+            }
+            if (bms_fields_string_from_id(id, (char **)metadata_msgs[imsg].fields_name, n_field, GEN_STR_LEN) ==
+                1) {
+                fprintf(stderr, "Could not retrieve bms string types from id %d\n", (int)id);
+                return 0;
+            }
+        }
+    }
     return 1;
 }
 
@@ -243,6 +290,19 @@ void send_message(int current_focus) {
             can_send_retval = can_send(&msg, can_sockets[0]);
             break;
         }
+        case bms_intf: {
+            msgid         = bms_id_from_index(chosen_msg_idx);
+            msg.id        = msgid;
+            size_t msg_sz = 0;
+            bms_serialize_from_string(msgid, to_serialize, msg.data, &msg_sz);
+            msg.size = (uint8_t)msg_sz;
+            fill_data(&msg, (char *)final_command, (char *)can_devices[0]);
+            can_send_retval = can_send(&msg, can_sockets[0]);
+            break;
+        }
+        default:
+            // TODO: Handle invalid networks
+            break;
     }
     WINDOW *prompt_win =
         newwin(SUBWIN_HEIGHT, SUBWIN_WIDTH, (scrheight - SUBWIN_HEIGHT) / 2, (scrwidth - SUBWIN_WIDTH) / 2);
@@ -301,6 +361,9 @@ int action(int current_focus) {
                 ctab             = main_menu;
                 return current_focus;
             }
+        default:
+            // TODO: Handle invalid networks
+            return current_focus;
     }
 }
 
@@ -311,6 +374,8 @@ int current_focus_dec(int current_focus) {
             return clamp(current_focus - 1, 0, get_intf_tot_msg() - 1);
         case fill_fields_menu:
             return clamp(current_focus - 1, 0, metadata_msgs[chosen_msg_idx].n_fields);
+        default:
+            return current_focus;
     }
 }
 
@@ -321,6 +386,8 @@ int current_focus_inc(int current_focus) {
             return clamp(current_focus + 1, 0, get_intf_tot_msg() - 1);
         case fill_fields_menu:
             return clamp(current_focus + 1, 0, metadata_msgs[chosen_msg_idx].n_fields);
+        default:
+            return current_focus;
     }
 }
 
@@ -367,6 +434,7 @@ int retrieve_input_prompt(int current_focus) {
     curs_set(0);
     memcpy(current_fields[current_focus], input_prompt, GEN_STR_LEN);
     delwin(prompt_win);
+    return 0U;
 }
 
 int render_main_menu(int current_focus, void *data) {
@@ -419,6 +487,7 @@ int render_main_menu(int current_focus, void *data) {
         }
     }
     refresh();
+    return 0U;
 }
 
 int render_fill_fields_menu(int current_focus, void *data) {

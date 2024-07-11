@@ -1,2 +1,23 @@
-build/**
-.vscode/**
+# Binaries
+*.o
+*.elf
+*.bin
+*.hex
+*.map
+.mxproject
+*.out
+
+# Build folders
+**/build/*
+**/target/*
+**/Backup/*
+
+# IDE related folders
+**/.idea/*
+**/.vscode/*
+compile_commands.json
+**/.cache
+
+# Miscellaneous
+.DS_Store
+
