@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.6.2] - 15-07-2024
+
+### Fixed
+
+- Remove routine function call from set, reset, expire and expire_immediate functions
+- Wrong variable used as index inside the expire function
+
 ## [1.6.1] - 17-06-2024
 
 ### Fixed

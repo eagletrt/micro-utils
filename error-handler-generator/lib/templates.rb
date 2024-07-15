@@ -516,8 +516,8 @@ module ErrorGen
               // Update error info
               top->is_running = false;
               top->is_expired = true;
-              --running_groups[data.group];
-              ++expired_groups[data.group];
+              --running_groups[top->group];
+              ++expired_groups[top->group];
 
               // Add error to the list of expired errors
               if (ring_buffer_push_back(&expired_errors, &top) != RING_BUFFER_OK)
@@ -670,8 +670,7 @@ module ErrorGen
               .timestamp = timestamp,
               .op = _<%= to_downcase('error_set', prefix: @prefix) %>
           };
-          if (ring_buffer_push_back(&err_buf, &data) == RING_BUFFER_OK)
-              <%= to_downcase('error_routine', prefix: @prefix) %>();
+          (void)ring_buffer_push_back(&err_buf, &data);
       }
       void <%= to_downcase('error_reset', prefix: @prefix) %>(<%= group_t %> group, <%= instance_t %> instance) {
           if (instance >= instances[group])
@@ -684,14 +683,12 @@ module ErrorGen
               .timestamp = 0,
               .op = _<%= to_downcase('error_reset', prefix: @prefix) %>
           };
-          if (ring_buffer_push_back(&err_buf, &data) == RING_BUFFER_OK)
-              <%= to_downcase('error_routine', prefix: @prefix) %>();
+          (void)ring_buffer_push_back(&err_buf, &data);
       }
       void <%= to_downcase('error_expire', prefix: @prefix) %>(void) {
           // Push data to the buffer
           <%= data_t %> data = { .op = _<%= to_downcase('error_expire', prefix: @prefix) %> };
-          if (ring_buffer_push_back(&err_buf, &data) == RING_BUFFER_OK)
-              <%= to_downcase('error_routine', prefix: @prefix) %>();
+          (void)ring_buffer_push_back(&err_buf, &data);
       }
       void <%= to_downcase('error_expire_immediate', prefix: @prefix) %>(<%= group_t %> group, <%= instance_t %> instance) {
           if (instance >= instances[group])
@@ -703,8 +700,7 @@ module ErrorGen
               .instance = instance,
               .op = _<%= to_downcase('error_expire_immediate', prefix: @prefix) %>
           };
-          if (ring_buffer_push_back(&err_buf, &data) == RING_BUFFER_OK)
-              <%= to_downcase('error_routine', prefix: @prefix) %>();
+          (void)ring_buffer_push_back(&err_buf, &data);
       }
       void <%= to_downcase('error_routine', prefix: @prefix) %>(void) {
           // Avoid multiple execution of the routine
