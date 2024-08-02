@@ -19,9 +19,8 @@
 /****
  * Choose one of the two following CAN_DEVICES configurations
 */
-#define CAN_DEVICES \
-    { "can0", "can0" }
-// { "vcan0", "vcan1" }
+#define CAN_DEVICES { "vcan0", "vcan1" }
+    // { "can0", "can0" }
 
 #define MAIN_THEME         1
 #define TITLE_THEME        2
