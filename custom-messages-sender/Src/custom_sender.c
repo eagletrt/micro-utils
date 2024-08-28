@@ -4,6 +4,14 @@ struct sockaddr_can address                  = {0};
 int can_sockets[N_CAN_DEVICES]               = {0};
 char can_devices[N_CAN_DEVICES][GEN_STR_LEN] = CAN_DEVICES;
 
+struct pollfd poll_fds[N_CAN_DEVICES+1];
+struct can_frame candump_data;
+can_message_log_t msg_log[primary_MESSAGE_COUNT + secondary_MESSAGE_COUNT + inverters_MESSAGE_COUNT];
+struct can_frame can_selected_msg;
+int msg_log_count;
+
+device_t rxdev;
+
 int open_can_socket(const char *device) {
     struct ifreq ifr;
     int can_socket = socket(PF_CAN, SOCK_RAW, CAN_RAW);
@@ -52,6 +60,8 @@ extern int n_shown_msgs;
 extern enum interfaces_t chosen_intf;
 
 can_msg_metadata_t metadata_msgs[primary_MESSAGE_COUNT + secondary_MESSAGE_COUNT + inverters_MESSAGE_COUNT];
+
+can_message_log_t msg_log[primary_MESSAGE_COUNT + secondary_MESSAGE_COUNT + inverters_MESSAGE_COUNT];
 
 void fatal_error(const char *error_msg) {
     endwin();
@@ -361,6 +371,11 @@ int action(int current_focus) {
                 ctab             = main_menu;
                 return current_focus;
             }
+            break;
+        case can_dump: { 
+                ctab = can_msg;
+                return current_focus;
+            }
         default:
             // TODO: Handle invalid networks
             return current_focus;
@@ -374,6 +389,10 @@ int current_focus_dec(int current_focus) {
             return clamp(current_focus - 1, 0, get_intf_tot_msg() - 1);
         case fill_fields_menu:
             return clamp(current_focus - 1, 0, metadata_msgs[chosen_msg_idx].n_fields);
+        case can_dump:
+            return clamp(current_focus - 1, 0, msg_log_count-1);
+        case can_msg:
+            return clamp(current_focus - 1, 0, metadata_msgs[primary_index_from_id(can_selected_msg.can_id)].n_fields-1);
         default:
             return current_focus;
     }
@@ -386,6 +405,10 @@ int current_focus_inc(int current_focus) {
             return clamp(current_focus + 1, 0, get_intf_tot_msg() - 1);
         case fill_fields_menu:
             return clamp(current_focus + 1, 0, metadata_msgs[chosen_msg_idx].n_fields);
+        case can_dump:
+            return clamp(current_focus + 1, 0, msg_log_count-1);
+        case can_msg:
+            return clamp(current_focus + 1, 0, metadata_msgs[primary_index_from_id(can_selected_msg.can_id)].n_fields-1);
         default:
             return current_focus;
     }
@@ -503,9 +526,9 @@ int render_fill_fields_menu(int current_focus, void *data) {
     wattrset(stdscr, COLOR_PAIR(MAIN_THEME));
     PRINT_INDICATIONS(stdscr);
 
-    char chosen_msg_label[GEN_LABEL_LEN];
-    snprintf(chosen_msg_label, GEN_LABEL_LEN, "Chosen msg name: %s", metadata_msgs[chosen_msg_idx].msg_name);
-    wattrset(stdscr, COLOR_PAIR(TITLE_THEME));
+    char chosen_msg_label[GEN_LABEL_LEN]; 
+    snprintf(chosen_msg_label, GEN_LABEL_LEN, "Chosen msg name: %s", metadata_msgs[chosen_msg_idx].msg_name); 
+    wattrset(stdscr, COLOR_PAIR(TITLE_THEME)); 
     WRITE_CENTERED(stdscr, current_row, chosen_msg_label, -1);
     wattrset(stdscr, COLOR_PAIR(MAIN_THEME));
     current_row += 2;
@@ -530,4 +553,97 @@ int render_fill_fields_menu(int current_focus, void *data) {
     return 0;
 }
 
-int (*render_menus[n_application_tabs])(int, void *) = {render_main_menu, render_fill_fields_menu, render_main_menu};
+int render_can_msg_center(WINDOW* win, int row, struct can_frame* msg, int current_focus) {
+    int msg_idx = primary_index_from_id(msg->can_id);
+    WRITE_CENTERED(win, row, metadata_msgs[msg_idx].msg_name, row-12);
+
+    if(row-12 == current_focus)
+        can_selected_msg = *msg;
+
+    return 0;
+}
+
+int render_can_dump(int current_focus, void *data) {
+    wclear(stdscr);
+    wattrset(stdscr, COLOR_PAIR(MAIN_THEME));
+    box(stdscr, 0, 0);
+    int current_row = 0;
+
+    const char title[] = "CAN DUMP MENU";
+    wattrset(stdscr, COLOR_PAIR(TITLE_THEME));
+    current_row++;
+    WRITE_CENTERED(stdscr, current_row, title, -1);
+    wattrset(stdscr, COLOR_PAIR(MAIN_THEME));
+
+    PRINT_INDICATIONS(stdscr);
+
+    render_can_dump_msg(current_focus, data);
+
+    refresh();
+
+    return 0;
+}
+
+int render_can_dump_msg(int current_focus, void* data) {
+    int current_row = 12;
+    int msg_count=0;
+    for(size_t i=0; i<primary_MESSAGE_COUNT + secondary_MESSAGE_COUNT + inverters_MESSAGE_COUNT; i++) {
+        if(msg_log[i].rec) {
+            if(msg_count>=current_focus)
+                render_can_msg_center(stdscr, current_row++, &msg_log[i].data, current_focus-msg_count);
+            msg_count++;
+        }
+    }
+
+    return 0;
+}
+
+int render_can_msg_data(int current_focus, void* data) {
+    wclear(stdscr);
+    wattrset(stdscr, COLOR_PAIR(MAIN_THEME));
+    box(stdscr, 0, 0);
+    int current_row = 0;
+
+    int msg_idx = primary_index_from_id(can_selected_msg.can_id);
+
+    wattrset(stdscr, COLOR_PAIR(TITLE_THEME));
+    current_row++;
+    WRITE_CENTERED(stdscr, current_row, metadata_msgs[msg_idx].msg_name, -1);
+    wattrset(stdscr, COLOR_PAIR(MAIN_THEME));
+
+    PRINT_INDICATIONS(stdscr);
+
+    uint8_t buf[1024];
+    uint8_t raw[1024];
+    device_set_address(&rxdev, raw, 1024, buf, 1024);
+    primary_devices_deserialize_from_id(&rxdev, can_selected_msg.can_id, can_selected_msg.data);
+
+    char msg_params[1024];
+    primary_to_string_from_id(can_selected_msg.can_id, rxdev.message, msg_params);
+
+    char *token, *ptr, *tmpstr = msg_params;
+    int msg_count = 0;
+    current_row = 12;
+    for(size_t i=0; i<metadata_msgs[msg_idx].n_fields; i++, tmpstr=NULL) {
+        token = strtok_r(tmpstr, ",", (char** restrict)&ptr);
+        if(msg_count>=current_focus) {
+
+            char msg_str[1024];
+            sprintf(
+                    msg_str, 
+                    "%s: %s", 
+                    metadata_msgs[msg_idx].fields_name[i]+strlen(metadata_msgs[msg_idx].msg_name)+1,
+                    token
+                );
+            WRITE_CENTERED(stdscr, current_row++, msg_str, msg_count);
+        }
+        msg_count++;
+
+    }
+
+    refresh();
+
+    return 0;
+}
+
+int (*render_menus[n_application_tabs])(int, void *) = {render_main_menu, render_fill_fields_menu, render_main_menu, render_can_dump, render_can_msg_data, render_can_dump};

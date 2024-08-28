@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.16.3)
 project(custom_message_sender)
 
+set(CMAKE_C_FLAGS "-g -Og -lm")
+
 add_executable(${PROJECT_NAME}
     Src/main.c
     Src/custom_sender.c
@@ -12,6 +14,7 @@ add_executable(${PROJECT_NAME}
     can/lib/inverters/inverters_utils.c
     can/lib/bms/bms_network.c
     can/lib/bms/bms_utils.c
+    can/lib/canlib_device.c
 )
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Inc
