@@ -89,8 +89,10 @@ extern struct can_frame can_selected_msg;
 
 extern device_t rxdev;
 
-extern can_message_log_t msg_log[primary_MESSAGE_COUNT + secondary_MESSAGE_COUNT + inverters_MESSAGE_COUNT];
+extern can_message_log_t msg_log[primary_MESSAGE_COUNT + secondary_MESSAGE_COUNT + inverters_MESSAGE_COUNT + bms_MESSAGE_COUNT];
 extern int msg_log_count;
+
+extern int idx_offset;
 
 int open_can_socket(const char *device);
 
@@ -103,5 +105,7 @@ int current_focus_inc(int current_focus);
 void fatal_error(const char *error_msg);
 
 int render_can_dump_msg(int current_focus, void* data);
+int render_can_msg_data_fields(int current_focus);
+int get_can_msg_index_from_id(int id);
 
 #endif  // GRAPHICS_H

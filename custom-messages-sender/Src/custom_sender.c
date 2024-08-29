@@ -6,11 +6,13 @@ char can_devices[N_CAN_DEVICES][GEN_STR_LEN] = CAN_DEVICES;
 
 struct pollfd poll_fds[N_CAN_DEVICES+1];
 struct can_frame candump_data;
-can_message_log_t msg_log[primary_MESSAGE_COUNT + secondary_MESSAGE_COUNT + inverters_MESSAGE_COUNT];
+can_message_log_t msg_log[primary_MESSAGE_COUNT + secondary_MESSAGE_COUNT + inverters_MESSAGE_COUNT + bms_MESSAGE_COUNT];
 struct can_frame can_selected_msg;
 int msg_log_count;
 
 device_t rxdev;
+
+int idx_offset;
 
 int open_can_socket(const char *device) {
     struct ifreq ifr;
@@ -59,9 +61,7 @@ bool _is_focused                               = false;
 extern int n_shown_msgs;
 extern enum interfaces_t chosen_intf;
 
-can_msg_metadata_t metadata_msgs[primary_MESSAGE_COUNT + secondary_MESSAGE_COUNT + inverters_MESSAGE_COUNT];
-
-can_message_log_t msg_log[primary_MESSAGE_COUNT + secondary_MESSAGE_COUNT + inverters_MESSAGE_COUNT];
+can_msg_metadata_t metadata_msgs[primary_MESSAGE_COUNT + secondary_MESSAGE_COUNT + inverters_MESSAGE_COUNT + bms_MESSAGE_COUNT];
 
 void fatal_error(const char *error_msg) {
     endwin();
@@ -553,14 +553,48 @@ int render_fill_fields_menu(int current_focus, void *data) {
     return 0;
 }
 
+int get_can_msg_index_from_id(int id) {
+    int idx = -1;
+    switch (chosen_intf) {
+        case primary_intf:
+            idx = primary_index_from_id(id);
+            break;
+        case secondary_intf:
+            idx = secondary_index_from_id(id);
+            break;
+        case bms_intf:
+            idx = bms_index_from_id(id);
+            break;
+        case inverter_intf:
+            idx = inverters_index_from_id(id);
+            break;
+        default:
+            break;
+    }
+
+    if(idx<0) {
+        return -1;
+    }
+
+    return idx + get_intf_base_idx();
+}
+
+
 int render_can_msg_center(WINDOW* win, int row, struct can_frame* msg, int current_focus) {
-    int msg_idx = primary_index_from_id(msg->can_id);
-    WRITE_CENTERED(win, row, metadata_msgs[msg_idx].msg_name, row-12);
+    int msg_idx = get_can_msg_index_from_id(msg->can_id);
 
-    if(row-12 == current_focus)
-        can_selected_msg = *msg;
+    if(msg_idx>=0) {
+        char str[200];
+        sprintf(str, "[%d] %s", msg_idx, metadata_msgs[msg_idx].msg_name);
+        WRITE_CENTERED(win, row, "                                          ", -1);
+        WRITE_CENTERED(win, row, str, row-12);
 
-    return 0;
+        if(row-12 == current_focus)
+            can_selected_msg = *msg;
+        return 0;
+    }
+
+    return -1;
 }
 
 int render_can_dump(int current_focus, void *data) {
@@ -587,15 +621,70 @@ int render_can_dump(int current_focus, void *data) {
 int render_can_dump_msg(int current_focus, void* data) {
     int current_row = 12;
     int msg_count=0;
-    for(size_t i=0; i<primary_MESSAGE_COUNT + secondary_MESSAGE_COUNT + inverters_MESSAGE_COUNT; i++) {
+    int msg_invalid = 0;
+    for(size_t i=0; i<primary_MESSAGE_COUNT + secondary_MESSAGE_COUNT + inverters_MESSAGE_COUNT + bms_MESSAGE_COUNT; i++) {
         if(msg_log[i].rec) {
-            if(msg_count>=current_focus)
+            if(msg_count>=current_focus) {
                 render_can_msg_center(stdscr, current_row++, &msg_log[i].data, current_focus-msg_count);
+            }
             msg_count++;
         }
     }
 
     return 0;
+}
+
+int render_can_msg_data_fields(int current_focus) {
+    
+    int msg_idx = get_can_msg_index_from_id(can_selected_msg.can_id);
+    if(msg_idx<0)
+        return -1;
+
+    uint8_t buf[1024];
+    uint8_t raw[1024];
+    char msg_params[1024];
+    device_set_address(&rxdev, raw, 1024, buf, 1024);
+
+    switch (chosen_intf) {
+        case primary_intf:
+            primary_devices_deserialize_from_id(&rxdev, can_selected_msg.can_id, can_selected_msg.data);
+            primary_to_string_from_id(can_selected_msg.can_id, rxdev.message, msg_params);
+            break;
+        case secondary_intf:
+            secondary_devices_deserialize_from_id(&rxdev, can_selected_msg.can_id, can_selected_msg.data);
+            secondary_to_string_from_id(can_selected_msg.can_id, rxdev.message, msg_params);
+            break;
+        case bms_intf:
+            bms_devices_deserialize_from_id(&rxdev, can_selected_msg.can_id, can_selected_msg.data);
+            bms_to_string_from_id(can_selected_msg.can_id, rxdev.message, msg_params);
+            break;
+        case inverter_intf:
+            inverters_devices_deserialize_from_id(&rxdev, can_selected_msg.can_id, can_selected_msg.data);
+            inverters_to_string_from_id(can_selected_msg.can_id, rxdev.message, msg_params);
+            break;
+        default:
+            break;
+    }
+
+    char *token, *ptr, *tmpstr = msg_params;
+    int msg_count = 0;
+    int current_row = 12;
+    for(size_t i=0; i<metadata_msgs[msg_idx].n_fields; i++, tmpstr=NULL) {
+        token = strtok_r(tmpstr, ",", (char** restrict)&ptr);
+        if(msg_count>=current_focus) {
+            char msg_str[1024];
+            sprintf(
+                    msg_str, 
+                    "%s: %s", 
+                    metadata_msgs[msg_idx].fields_name[i]+strlen(metadata_msgs[msg_idx].msg_name)+1,
+                    token
+                );
+            WRITE_CENTERED(stdscr, current_row, "                                          ", -1);
+            WRITE_CENTERED(stdscr, current_row++, msg_str, msg_count);
+        }
+        msg_count++;
+
+    }
 }
 
 int render_can_msg_data(int current_focus, void* data) {
@@ -604,7 +693,7 @@ int render_can_msg_data(int current_focus, void* data) {
     box(stdscr, 0, 0);
     int current_row = 0;
 
-    int msg_idx = primary_index_from_id(can_selected_msg.can_id);
+    int msg_idx = get_can_msg_index_from_id(can_selected_msg.can_id);
 
     wattrset(stdscr, COLOR_PAIR(TITLE_THEME));
     current_row++;
@@ -613,33 +702,7 @@ int render_can_msg_data(int current_focus, void* data) {
 
     PRINT_INDICATIONS(stdscr);
 
-    uint8_t buf[1024];
-    uint8_t raw[1024];
-    device_set_address(&rxdev, raw, 1024, buf, 1024);
-    primary_devices_deserialize_from_id(&rxdev, can_selected_msg.can_id, can_selected_msg.data);
-
-    char msg_params[1024];
-    primary_to_string_from_id(can_selected_msg.can_id, rxdev.message, msg_params);
-
-    char *token, *ptr, *tmpstr = msg_params;
-    int msg_count = 0;
-    current_row = 12;
-    for(size_t i=0; i<metadata_msgs[msg_idx].n_fields; i++, tmpstr=NULL) {
-        token = strtok_r(tmpstr, ",", (char** restrict)&ptr);
-        if(msg_count>=current_focus) {
-
-            char msg_str[1024];
-            sprintf(
-                    msg_str, 
-                    "%s: %s", 
-                    metadata_msgs[msg_idx].fields_name[i]+strlen(metadata_msgs[msg_idx].msg_name)+1,
-                    token
-                );
-            WRITE_CENTERED(stdscr, current_row++, msg_str, msg_count);
-        }
-        msg_count++;
-
-    }
+    render_can_msg_data_fields(current_focus);
 
     refresh();
 

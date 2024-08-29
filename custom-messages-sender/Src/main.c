@@ -6,6 +6,13 @@ int n_shown_msgs              = 20;
 
 static_assert(N_CAN_DEVICES == (sizeof(can_devices) / GEN_STR_LEN));
 
+void init_rec_log() {
+    for(size_t i=0; i<primary_MESSAGE_COUNT + secondary_MESSAGE_COUNT + inverters_MESSAGE_COUNT; i++) {
+        msg_log[i].rec = false;
+    }
+    msg_log_count=0;
+}
+
 int main(int argc, char const *argv[]) {
     /* 
         primary_lv_current_battery_converted_t converted = { .lv_current = 10.0f };
@@ -20,13 +27,11 @@ int main(int argc, char const *argv[]) {
      */
 
     initscr();
+
+    init_rec_log();
     
     if (!init_canlib_metadata()) {
         fatal_error("Failed to initialize canlib metadata");
-    }
-
-    for(size_t i=0; i<primary_MESSAGE_COUNT + secondary_MESSAGE_COUNT + inverters_MESSAGE_COUNT; i++) {
-        msg_log[i].rec = false;
     }
 
     poll_fds[0].fd = STDIN_FILENO;
@@ -78,13 +83,23 @@ int main(int argc, char const *argv[]) {
 
         if(poll_fds[1].revents & POLLIN) {
             read(poll_fds[1].fd, &candump_data, sizeof(candump_data));
-            int msg_idx = primary_index_from_id(candump_data.can_id);
-            if(msg_log[msg_idx].rec==false)
+            int msg_idx = get_can_msg_index_from_id(candump_data.can_id);
+            
+            if(msg_log[msg_idx].rec==false && msg_idx>=0) {
                 msg_log_count++;
-            msg_log[msg_idx].rec = true;
+                msg_log[msg_idx].rec = true;
+            }
             msg_log[msg_idx].data = candump_data;
+
+            if(msg_idx == get_can_msg_index_from_id(can_selected_msg.can_id))
+                can_selected_msg = candump_data;
+
             if(ctab==can_dump) {
                 render_can_dump_msg(current_focus, NULL);
+                refresh();
+            } else if(ctab==can_msg) {
+                render_can_msg_data_fields(current_focus);
+                refresh();
             }
         }
 
@@ -105,25 +120,25 @@ int main(int argc, char const *argv[]) {
                             break;
                         }
                         case 'o':
-                            if (ctab == main_menu) {
+                            if (ctab == main_menu || ctab == can_dump) {
                                 current_focus = 0;
                                 chosen_intf   = secondary_intf;
                             }
                             break;
                         case 'p':
-                            if (ctab == main_menu) {
+                            if (ctab == main_menu || ctab == can_dump) {
                                 current_focus = 0;
                                 chosen_intf   = primary_intf;
                             }
                             break;
                         case 'i':
-                            if (ctab == main_menu) {
+                            if (ctab == main_menu || ctab == can_dump) {
                                 current_focus = 0;
                                 chosen_intf   = inverter_intf;
                             }
                             break;
                         case 'u':
-                            if (ctab == main_menu) {
+                            if (ctab == main_menu || ctab == can_dump) {
                                 current_focus = 0;
                                 chosen_intf   = bms_intf;
                             }
@@ -260,6 +275,43 @@ int main(int argc, char const *argv[]) {
                         
                         case 'q':
                             quit = true;
+                            break;
+
+                        case 'o':
+                            if (ctab == main_menu || ctab == can_dump) {
+                                current_focus = 0;
+                                chosen_intf   = secondary_intf;
+                                init_rec_log();
+                                render_menus[ctab](current_focus, (ctab == main_menu) ? NULL : (void *)searching_buffer);
+                                refresh();
+                            }
+                            break;
+                        case 'p':
+                            if (ctab == main_menu || ctab == can_dump) {
+                                current_focus = 0;
+                                chosen_intf   = primary_intf;
+                                init_rec_log();
+                                render_menus[ctab](current_focus, (ctab == main_menu) ? NULL : (void *)searching_buffer);
+                                refresh();
+                            }
+                            break;
+                        case 'i':
+                            if (ctab == main_menu || ctab == can_dump) {
+                                current_focus = 0;
+                                chosen_intf   = inverter_intf;
+                                init_rec_log();
+                                render_menus[ctab](current_focus, (ctab == main_menu) ? NULL : (void *)searching_buffer);
+                                refresh();
+                            }
+                            break;
+                        case 'u':
+                            if (ctab == main_menu || ctab == can_dump) {
+                                current_focus = 0;
+                                chosen_intf   = bms_intf;
+                                init_rec_log();
+                                render_menus[ctab](current_focus, (ctab == main_menu) ? NULL : (void *)searching_buffer);
+                                refresh();
+                            }
                             break;
                     }
                     break;
