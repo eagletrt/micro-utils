@@ -585,7 +585,7 @@ int render_can_msg_center(WINDOW* win, int row, struct can_frame* msg, int curre
 
     if(msg_idx>=0) {
         char str[200];
-        sprintf(str, "[%d] %s", msg_idx, metadata_msgs[msg_idx].msg_name);
+        sprintf(str, "[0x%03x] %s", msg->can_id, metadata_msgs[msg_idx].msg_name);
         WRITE_CENTERED(win, row, "                                          ", -1);
         WRITE_CENTERED(win, row, str, row-12);
 
