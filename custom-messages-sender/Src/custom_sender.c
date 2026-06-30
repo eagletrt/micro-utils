@@ -14,101 +14,101 @@
 int primary_message_name_from_id(uint16_t id, char *buffer) {
     switch (id) {
         case CAN_PRIMARY_MESSAGE_FRAME_ID_TELEMETRY_VERSION:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_TELEMETRY_VERSION");
+            return sprintf(buffer, "%s", "telemetry_version");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_TELEMETRY_STATUS:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_TELEMETRY_STATUS");
+            return sprintf(buffer, "%s", "telemetry_status");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_ECU_VERSION:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_ECU_VERSION");
+            return sprintf(buffer, "%s", "ecu_version");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_ECU_STATUS:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_ECU_STATUS");
+            return sprintf(buffer, "%s", "ecu_status");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_ECU_SET_HV_BMS_STATUS:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_ECU_SET_HV_BMS_STATUS");
+            return sprintf(buffer, "%s", "ecu_set_hv_bms_status");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_PEDALS_VERSION:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_PEDALS_VERSION");
+            return sprintf(buffer, "%s", "pedals_version");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_PEDALS_STATUS:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_PEDALS_STATUS");
+            return sprintf(buffer, "%s", "pedals_status");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_PEDALS_APPS:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_PEDALS_APPS");
+            return sprintf(buffer, "%s", "pedals_apps");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_PEDALS_THROTTLE:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_PEDALS_THROTTLE");
+            return sprintf(buffer, "%s", "pedals_throttle");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_PEDALS_BRAKE:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_PEDALS_BRAKE");
+            return sprintf(buffer, "%s", "pedals_brake");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_STATUS:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_STATUS");
+            return sprintf(buffer, "%s", "hv_bms_status");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_VERSION:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_VERSION");
+            return sprintf(buffer, "%s", "hv_bms_version");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_VERSION:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_VERSION");
+            return sprintf(buffer, "%s", "hv_bms_cellboard_version");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_FLASH:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_FLASH");
+            return sprintf(buffer, "%s", "hv_bms_flash");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_MAINBOARD_TX:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_MAINBOARD_TX");
+            return sprintf(buffer, "%s", "hv_bms_mainboard_tx");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_MAINBOARD_RX:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_MAINBOARD_RX");
+            return sprintf(buffer, "%s", "hv_bms_mainboard_rx");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_TX_0:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_TX_0");
+            return sprintf(buffer, "%s", "hv_bms_cellboard_openblt_tx_0");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_RX_0:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_RX_0");
+            return sprintf(buffer, "%s", "hv_bms_cellboard_openblt_rx_0");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_TX_1:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_TX_1");
+            return sprintf(buffer, "%s", "hv_bms_cellboard_openblt_tx_1");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_RX_1:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_RX_1");
+            return sprintf(buffer, "%s", "hv_bms_cellboard_openblt_rx_1");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_TX_2:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_TX_2");
+            return sprintf(buffer, "%s", "hv_bms_cellboard_openblt_tx_2");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_RX_2:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_RX_2");
+            return sprintf(buffer, "%s", "hv_bms_cellboard_openblt_rx_2");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_TX_3:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_TX_3");
+            return sprintf(buffer, "%s", "hv_bms_cellboard_openblt_tx_3");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_RX_3:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_RX_3");
+            return sprintf(buffer, "%s", "hv_bms_cellboard_openblt_rx_3");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_TX_4:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_TX_4");
+            return sprintf(buffer, "%s", "hv_bms_cellboard_openblt_tx_4");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_RX_4:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_RX_4");
+            return sprintf(buffer, "%s", "hv_bms_cellboard_openblt_rx_4");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_TX_5:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_TX_5");
+            return sprintf(buffer, "%s", "hv_bms_cellboard_openblt_tx_5");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_RX_5:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_RX_5");
+            return sprintf(buffer, "%s", "hv_bms_cellboard_openblt_rx_5");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_BALANCING_STATUS:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_BALANCING_STATUS");
+            return sprintf(buffer, "%s", "hv_bms_balancing_status");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_TS_VOLTAGE:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_TS_VOLTAGE");
+            return sprintf(buffer, "%s", "hv_bms_ts_voltage");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_VOLTAGES:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_VOLTAGES");
+            return sprintf(buffer, "%s", "hv_bms_cellboard_voltages");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_VOLTAGES_INFO:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_VOLTAGES_INFO");
+            return sprintf(buffer, "%s", "hv_bms_cellboard_voltages_info");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_TEMPERATURES:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_TEMPERATURES");
+            return sprintf(buffer, "%s", "hv_bms_cellboard_temperatures");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_TEMPERATURES_INFO:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_TEMPERATURES_INFO");
+            return sprintf(buffer, "%s", "hv_bms_cellboard_temperatures_info");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CURRENT:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CURRENT");
+            return sprintf(buffer, "%s", "hv_bms_current");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_POWER:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_POWER");
+            return sprintf(buffer, "%s", "hv_bms_power");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_IMD:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_IMD");
+            return sprintf(buffer, "%s", "hv_bms_imd");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_FEEDBACK_STATUS:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_FEEDBACK_STATUS");
+            return sprintf(buffer, "%s", "hv_bms_feedback_status");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_FEEDBACK_TS_VOLTAGE:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_FEEDBACK_TS_VOLTAGE");
+            return sprintf(buffer, "%s", "hv_bms_feedback_ts_voltage");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_FEEDBACK_SD_VOLTAGE:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_FEEDBACK_SD_VOLTAGE");
+            return sprintf(buffer, "%s", "hv_bms_feedback_sd_voltage");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_FEEDBACK_MISC_VOLTAGE:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_FEEDBACK_MISC_VOLTAGE");
+            return sprintf(buffer, "%s", "hv_bms_feedback_misc_voltage");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_ERRORS:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_ERRORS");
+            return sprintf(buffer, "%s", "hv_bms_errors");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_STEERING_WHEEL_FLASH:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_STEERING_WHEEL_FLASH");
+            return sprintf(buffer, "%s", "steering_wheel_flash");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_STEERING_WHEEL_OPENBLT_TX:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_STEERING_WHEEL_OPENBLT_TX");
+            return sprintf(buffer, "%s", "steering_wheel_openblt_tx");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_STEERING_WHEEL_OPENBLT_RX:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_STEERING_WHEEL_OPENBLT_RX");
+            return sprintf(buffer, "%s", "steering_wheel_openblt_rx");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_STEERING_WHEEL_VERSION:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_STEERING_WHEEL_VERSION");
+            return sprintf(buffer, "%s", "steering_wheel_version");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_STEERING_WHEEL_SET_ECU_STATUS:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_STEERING_WHEEL_SET_ECU_STATUS");
+            return sprintf(buffer, "%s", "steering_wheel_set_ecu_status");
         case CAN_PRIMARY_MESSAGE_FRAME_ID_STEERING_WHEEL_SET_HV_BMS_BALANCING_STATUS:
-            return sprintf(buffer, "%s", "CAN_PRIMARY_MESSAGE_FRAME_ID_STEERING_WHEEL_SET_HV_BMS_BALANCING_STATUS");
+            return sprintf(buffer, "%s", "steering_wheel_set_hv_bms_balancing_status");
         default:
             return 0;
     }
