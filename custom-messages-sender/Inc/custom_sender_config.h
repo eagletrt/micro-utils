@@ -36,6 +36,6 @@
 enum application_tabs_t { main_menu, fill_fields_menu, search_menu, can_dump, can_msg, search_menu_rec, n_application_tabs};
 
 
-enum interfaces_t { primary_intf, secondary_intf, inverter_intf, bms_intf, n_intf };
+enum interfaces_t { primary_intf, inverter_intf, bms_intf, n_intf };
 
 #endif  // CUSTOM_SENDER_CONFIG_H

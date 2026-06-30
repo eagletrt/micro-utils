@@ -6,7 +6,7 @@ char can_devices[N_CAN_DEVICES][GEN_STR_LEN] = CAN_DEVICES;
 
 struct pollfd poll_fds[N_CAN_DEVICES+1];
 struct can_frame candump_data;
-can_message_log_t msg_log[primary_MESSAGE_COUNT + secondary_MESSAGE_COUNT + inverters_MESSAGE_COUNT + bms_MESSAGE_COUNT];
+can_message_log_t msg_log[CAN_PRIMARY_MESSAGE_COUNT + CAN_INVERTERS_MESSAGE_COUNT + CAN_BMS_MESSAGE_COUNT];
 struct can_frame can_selected_msg;
 int msg_log_count;
 
@@ -61,24 +61,20 @@ bool _is_focused                               = false;
 extern int n_shown_msgs;
 extern enum interfaces_t chosen_intf;
 
-can_msg_metadata_t metadata_msgs[primary_MESSAGE_COUNT + secondary_MESSAGE_COUNT + inverters_MESSAGE_COUNT + bms_MESSAGE_COUNT];
+can_msg_metadata_t metadata_msgs[CAN_PRIMARY_MESSAGE_COUNT + CAN_INVERTERS_MESSAGE_COUNT + CAN_BMS_MESSAGE_COUNT];
 
 void fatal_error(const char *error_msg) {
-    endwin();
-    fprintf(stderr, "[ERROR]: %s\n", error_msg);
     exit(1);
 }
 
 int get_intf_tot_msg() {
     switch (chosen_intf) {
         case primary_intf:
-            return primary_MESSAGE_COUNT;
-        case secondary_intf:
-            return secondary_MESSAGE_COUNT;
+            return CAN_PRIMARY_MESSAGE_COUNT;
         case inverter_intf:
-            return inverters_MESSAGE_COUNT;
+            return CAN_INVERTERS_MESSAGE_COUNT;
         case bms_intf:
-            return bms_MESSAGE_COUNT;
+            return CAN_BMS_MESSAGE_COUNT;
         default:
             return 0;
     }
@@ -88,13 +84,10 @@ int get_intf_base_idx() {
     int base = 0U;
     switch (chosen_intf) {
         case bms_intf:
-            base += inverters_MESSAGE_COUNT;
+            base += CAN_INVERTERS_MESSAGE_COUNT;
             ; // Missing break is intentional
         case inverter_intf:
-            base += secondary_MESSAGE_COUNT;
-            ; // Missing break is intentional
-        case secondary_intf:
-            base += primary_MESSAGE_COUNT;
+            base += CAN_PRIMARY_MESSAGE_COUNT;
             ; // Missing break is intentional
         default:
             return base;
@@ -105,13 +98,10 @@ int get_idx_from_intf(int bidx, enum interfaces_t intf) {
     int base = bidx;
     switch (intf) {
         case bms_intf:
-            base += inverters_MESSAGE_COUNT;
+            base += INVERTERS_MESSAGE_COUNT;
             ; // Missing break is intentional
         case inverter_intf:
-            base += secondary_MESSAGE_COUNT;
-            ; // Missing break is intentional
-        case secondary_intf:
-            base += primary_MESSAGE_COUNT;
+            base += CAN_PRIMARY_MESSAGE_COUNT;
             ; // Missing break is intentional
         default:
             return base;
@@ -119,7 +109,7 @@ int get_idx_from_intf(int bidx, enum interfaces_t intf) {
 }
 
 int init_canlib_metadata(void) {
-    for (size_t iidx = 0; iidx < primary_MESSAGE_COUNT; iidx++) {
+    for (size_t iidx = 0; iidx < CAN_PRIMARY_MESSAGE_COUNT; iidx++) {
         uint16_t id                  = primary_id_from_index(iidx);
         if (id == 0xFF) {
             fatal_error("Could not retrieve primary message id from index");
@@ -649,10 +639,6 @@ int render_can_msg_data_fields(int current_focus) {
         case primary_intf:
             primary_devices_deserialize_from_id(&rxdev, can_selected_msg.can_id, can_selected_msg.data);
             primary_to_string_from_id(can_selected_msg.can_id, rxdev.message, msg_params);
-            break;
-        case secondary_intf:
-            secondary_devices_deserialize_from_id(&rxdev, can_selected_msg.can_id, can_selected_msg.data);
-            secondary_to_string_from_id(can_selected_msg.can_id, rxdev.message, msg_params);
             break;
         case bms_intf:
             bms_devices_deserialize_from_id(&rxdev, can_selected_msg.can_id, can_selected_msg.data);

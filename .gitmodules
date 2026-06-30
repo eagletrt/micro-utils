@@ -1,4 +1,6 @@
+[submodule "custom-messages-sender/libeagletrt-sw"]
+	path = custom-messages-sender/libeagletrt-sw
+	url = git@github.com:eagletrt/libeagletrt-sw
 [submodule "custom-messages-sender/can"]
 	path = custom-messages-sender/can
-	url = git@github.com:eagletrt/can.git
-	branch = build-evo
+	url = git@github.com:eagletrt/libcan-sw

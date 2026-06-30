@@ -3,7 +3,6 @@
 
 #include <stdbool.h>
 #include <poll.h>
-#include "canlib_device.h"
 
 #define GEN_STR_LEN   (128)
 #define GEN_LABEL_LEN (256)
@@ -23,10 +22,11 @@
         wattrset(screen, COLOR_PAIR(MAIN_THEME));                         \
     }
 
+// const char indications_row_3[] = "O to use secondary network, U to use bms newtork";      \
+
 #define PRINT_INDICATIONS(screen)                                                             \
     const char indications_row_1[] = "Use up and down arrows to browse around";               \
     const char indications_row_2[] = "P to use primary network, I to use inverter network";   \
-    const char indications_row_3[] = "O to use secondary network, U to use bms newtork";      \
     const char indications_row_4[] = "S to search for a message, E to edit the current field when a message is chosen";  \
     const char indications_row_5[] = "M to go to menu, H to select past sent a past message"; \
     const char indications_row_6[] = "D to go to can dump menu";                              \
@@ -48,14 +48,12 @@
     current_row += 3
 
 #include "custom_sender_config.h"
-#include "inverters/inverters_network.h"
-#include "inverters/inverters_utils.h"
-#include "primary/primary_network.h"
-#include "primary/primary_utils.h"
-#include "secondary/secondary_network.h"
-#include "secondary/secondary_utils.h"
-#include "bms/bms_network.h"
-#include "bms/bms_utils.h"
+#include "inverters/can-inverters.h"
+#include "inverters/inverters-utils.h"
+#include "primary/can-primary.h"
+#include "primary/primary-utils.h"
+#include "bms/can-bms.h"
+#include "bms/bms-utils.h"
 
 #include <ncurses.h>
 
@@ -89,7 +87,7 @@ extern struct can_frame can_selected_msg;
 
 extern device_t rxdev;
 
-extern can_message_log_t msg_log[primary_MESSAGE_COUNT + secondary_MESSAGE_COUNT + inverters_MESSAGE_COUNT + bms_MESSAGE_COUNT];
+extern can_message_log_t msg_log[CAN_PRIMARY_MESSAGE_COUNT + CAN_INVERTERS_MESSAGE_COUNT + CAN_BMS_MESSAGE_COUNT];
 extern int msg_log_count;
 
 extern int idx_offset;
