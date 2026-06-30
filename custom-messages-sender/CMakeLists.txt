@@ -18,6 +18,9 @@ add_executable(${PROJECT_NAME}
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Inc
     ${CMAKE_CURRENT_SOURCE_DIR}/can/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/can/include/bms
+    ${CMAKE_CURRENT_SOURCE_DIR}/can/include/inverters
+    ${CMAKE_CURRENT_SOURCE_DIR}/can/include/primary
     ${CMAKE_CURRENT_SOURCE_DIR}/libeagletrt-sw/include
 )
 target_link_libraries(${PROJECT_NAME}

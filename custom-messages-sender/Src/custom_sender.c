@@ -1,16 +1,29 @@
 #include "custom_sender.h"
 
+#include "bms-utils.h"
+#include "can-networks.h"
+#include "inverters-utils.h"
+#include "primary-utils.h"
+
+#define primary_message_name_from_id(a, b)   sprintf(b, "Primary dummy\n")
+#define bms_message_name_from_id(a, b)       sprintf(b, "Bms dummy\n")
+#define inverters_message_name_from_id(a, b) sprintf(b, "Inverters dummy%s\n")
+
+#define primary_to_string_from_id(a, b, c)   ((void)0)
+#define bms_to_string_from_id(a, b, c)       ((void)0)
+#define inverters_to_string_from_id(a, b, c) ((void)0)
+
 struct sockaddr_can address                  = {0};
 int can_sockets[N_CAN_DEVICES]               = {0};
 char can_devices[N_CAN_DEVICES][GEN_STR_LEN] = CAN_DEVICES;
 
-struct pollfd poll_fds[N_CAN_DEVICES+1];
+struct pollfd poll_fds[N_CAN_DEVICES + 1];
 struct can_frame candump_data;
 can_message_log_t msg_log[CAN_PRIMARY_MESSAGE_COUNT + CAN_INVERTERS_MESSAGE_COUNT + CAN_BMS_MESSAGE_COUNT];
 struct can_frame can_selected_msg;
 int msg_log_count;
 
-device_t rxdev;
+union CanNetworkMessage can_network_message;
 
 int idx_offset;
 
@@ -85,10 +98,10 @@ int get_intf_base_idx() {
     switch (chosen_intf) {
         case bms_intf:
             base += CAN_INVERTERS_MESSAGE_COUNT;
-            ; // Missing break is intentional
+            ;  // Missing break is intentional
         case inverter_intf:
             base += CAN_PRIMARY_MESSAGE_COUNT;
-            ; // Missing break is intentional
+            ;  // Missing break is intentional
         default:
             return base;
     }
@@ -98,11 +111,11 @@ int get_idx_from_intf(int bidx, enum interfaces_t intf) {
     int base = bidx;
     switch (intf) {
         case bms_intf:
-            base += INVERTERS_MESSAGE_COUNT;
-            ; // Missing break is intentional
+            base += CAN_INVERTERS_MESSAGE_COUNT;
+            ;  // Missing break is intentional
         case inverter_intf:
             base += CAN_PRIMARY_MESSAGE_COUNT;
-            ; // Missing break is intentional
+            ;  // Missing break is intentional
         default:
             return base;
     }
@@ -110,7 +123,7 @@ int get_idx_from_intf(int bidx, enum interfaces_t intf) {
 
 int init_canlib_metadata(void) {
     for (size_t iidx = 0; iidx < CAN_PRIMARY_MESSAGE_COUNT; iidx++) {
-        uint16_t id                  = primary_id_from_index(iidx);
+        uint16_t id = can_primary_api_id_from_index(iidx);
         if (id == 0xFF) {
             fatal_error("Could not retrieve primary message id from index");
         }
@@ -139,38 +152,8 @@ int init_canlib_metadata(void) {
             }
         }
     }
-    for (size_t iidx = 0; iidx < secondary_MESSAGE_COUNT; iidx++) {
-        uint16_t id = secondary_id_from_index(iidx);
-        if (id == 0xFF) {
-            fatal_error("Could not retrieve secondary message id from index");
-        }
-        int imsg                     = get_idx_from_intf(iidx, secondary_intf);
-        int n_field                  = secondary_n_fields_from_id(id);
-        metadata_msgs[imsg].n_fields = n_field;
-        metadata_msgs[imsg].msg_name = (char *)malloc(GEN_STR_LEN * sizeof(char));
-        if (!secondary_message_name_from_id(id, metadata_msgs[imsg].msg_name)) {
-            fprintf(stderr, "Could not retrieve secondary message name from id %d\n", (int)id);
-            return 0;
-        }
-        metadata_msgs[imsg].fields_type = (int *)malloc(n_field * sizeof(int));
-        if (n_field > 0) {
-            if (secondary_fields_types_from_id(id, metadata_msgs[imsg].fields_type, n_field) == 0) {
-                fprintf(stderr, "Could not retrieve secondary fields types from id %d\n", (int)id);
-                return 0;
-            }
-            metadata_msgs[imsg].fields_name = (char **)malloc(n_field * sizeof(char *));
-            for (size_t ifield = 0; ifield < n_field; ifield++) {
-                metadata_msgs[imsg].fields_name[ifield] = (char *)malloc(GEN_STR_LEN * sizeof(char));
-            }
-            if (secondary_fields_string_from_id(id, (char **)metadata_msgs[imsg].fields_name, n_field, GEN_STR_LEN) ==
-                1) {
-                fprintf(stderr, "Could not retrieve secondary string types from id %d\n", (int)id);
-                return 0;
-            }
-        }
-    }
-    for (size_t iidx = 0; iidx < inverters_MESSAGE_COUNT; iidx++) {
-        uint16_t id = inverters_id_from_index(iidx);
+    for (size_t iidx = 0; iidx < CAN_INVERTERS_MESSAGE_COUNT; iidx++) {
+        uint16_t id = can_inverters_api_id_from_index(iidx);
         if (id == 0xFF) {
             fatal_error("Could not retrieve inverter message id from index");
         }
@@ -199,8 +182,8 @@ int init_canlib_metadata(void) {
             }
         }
     }
-    for (size_t iidx = 0; iidx < bms_MESSAGE_COUNT; iidx++) {
-        uint16_t id = bms_id_from_index(iidx);
+    for (size_t iidx = 0; iidx < CAN_BMS_MESSAGE_COUNT; iidx++) {
+        uint16_t id = can_bms_api_id_from_index(iidx);
         if (id == 0xFF) {
             fatal_error("Could not retrieve bms message id from index");
         }
@@ -222,8 +205,7 @@ int init_canlib_metadata(void) {
             for (size_t ifield = 0; ifield < n_field; ifield++) {
                 metadata_msgs[imsg].fields_name[ifield] = (char *)malloc(GEN_STR_LEN * sizeof(char));
             }
-            if (bms_fields_string_from_id(id, (char **)metadata_msgs[imsg].fields_name, n_field, GEN_STR_LEN) ==
-                1) {
+            if (bms_fields_string_from_id(id, (char **)metadata_msgs[imsg].fields_name, n_field, GEN_STR_LEN) == 1) {
                 fprintf(stderr, "Could not retrieve bms string types from id %d\n", (int)id);
                 return 0;
             }
@@ -261,40 +243,30 @@ void send_message(int current_focus) {
     }
     switch (chosen_intf) {
         case primary_intf: {
-            msgid         = primary_id_from_index(chosen_msg_idx);
+            msgid         = can_primary_api_id_from_index(chosen_msg_idx);
             msg.id        = msgid;
             size_t msg_sz = 0;
-            primary_serialize_from_string(msgid, to_serialize, msg.data, &msg_sz);
+            (void)primary_serialize_from_string(msgid, to_serialize, msg.data, &msg_sz);
             msg.size = (uint8_t)msg_sz;
             fill_data(&msg, (char *)final_command, (char *)can_devices[0]);
             can_send_retval = can_send(&msg, can_sockets[0]);
             break;
         }
-        case secondary_intf: {
-            msgid         = secondary_id_from_index(chosen_msg_idx - get_intf_base_idx());
-            msg.id        = msgid;
-            size_t msg_sz = 0;
-            secondary_serialize_from_string(msgid, to_serialize, msg.data, &msg_sz);
-            msg.size = (uint8_t)msg_sz;
-            fill_data(&msg, (char *)final_command, (char *)can_devices[1]);
-            can_send_retval = can_send(&msg, can_sockets[1]);
-            break;
-        }
         case inverter_intf: {
-            msgid         = inverters_id_from_index(chosen_msg_idx - get_intf_base_idx());
+            msgid         = can_inverters_api_id_from_index(chosen_msg_idx - get_intf_base_idx());
             msg.id        = msgid;
             size_t msg_sz = 0;
-            inverters_serialize_from_string(msgid, to_serialize, msg.data, &msg_sz);
+            (void)inverters_serialize_from_string(msgid, to_serialize, msg.data, &msg_sz);
             msg.size = (uint8_t)msg_sz;
             fill_data(&msg, (char *)final_command, (char *)can_devices[0]);
             can_send_retval = can_send(&msg, can_sockets[0]);
             break;
         }
         case bms_intf: {
-            msgid         = bms_id_from_index(chosen_msg_idx);
+            msgid         = can_bms_api_id_from_index(chosen_msg_idx);
             msg.id        = msgid;
             size_t msg_sz = 0;
-            bms_serialize_from_string(msgid, to_serialize, msg.data, &msg_sz);
+            (void)bms_serialize_from_string(msgid, to_serialize, msg.data, &msg_sz);
             msg.size = (uint8_t)msg_sz;
             fill_data(&msg, (char *)final_command, (char *)can_devices[0]);
             can_send_retval = can_send(&msg, can_sockets[0]);
@@ -352,7 +324,7 @@ int action(int current_focus) {
                 retrieve_input_prompt(current_focus);
             } else {
                 send_message(current_focus);
-                chosen_msg_idx   = -1;
+                chosen_msg_idx = -1;
                 if (chosen_msg_idx == inverter_intf) {
                     current_focus = 0;
                 }
@@ -362,10 +334,10 @@ int action(int current_focus) {
                 return current_focus;
             }
             break;
-        case can_dump: { 
-                ctab = can_msg;
-                return current_focus;
-            }
+        case can_dump: {
+            ctab = can_msg;
+            return current_focus;
+        }
         default:
             // TODO: Handle invalid networks
             return current_focus;
@@ -380,9 +352,10 @@ int current_focus_dec(int current_focus) {
         case fill_fields_menu:
             return clamp(current_focus - 1, 0, metadata_msgs[chosen_msg_idx].n_fields);
         case can_dump:
-            return clamp(current_focus - 1, 0, msg_log_count-1);
+            return clamp(current_focus - 1, 0, msg_log_count - 1);
         case can_msg:
-            return clamp(current_focus - 1, 0, metadata_msgs[primary_index_from_id(can_selected_msg.can_id)].n_fields-1);
+            int index = can_primary_api_index_from_id(can_selected_msg.can_id);
+            return clamp(current_focus - 1, 0, metadata_msgs[index].n_fields - 1);
         default:
             return current_focus;
     }
@@ -396,9 +369,10 @@ int current_focus_inc(int current_focus) {
         case fill_fields_menu:
             return clamp(current_focus + 1, 0, metadata_msgs[chosen_msg_idx].n_fields);
         case can_dump:
-            return clamp(current_focus + 1, 0, msg_log_count-1);
+            return clamp(current_focus + 1, 0, msg_log_count - 1);
         case can_msg:
-            return clamp(current_focus + 1, 0, metadata_msgs[primary_index_from_id(can_selected_msg.can_id)].n_fields-1);
+            int index = can_primary_api_index_from_id(can_selected_msg.can_id);
+            return clamp(current_focus + 1, 0, metadata_msgs[index].n_fields - 1);
         default:
             return current_focus;
     }
@@ -516,9 +490,9 @@ int render_fill_fields_menu(int current_focus, void *data) {
     wattrset(stdscr, COLOR_PAIR(MAIN_THEME));
     PRINT_INDICATIONS(stdscr);
 
-    char chosen_msg_label[GEN_LABEL_LEN]; 
-    snprintf(chosen_msg_label, GEN_LABEL_LEN, "Chosen msg name: %s", metadata_msgs[chosen_msg_idx].msg_name); 
-    wattrset(stdscr, COLOR_PAIR(TITLE_THEME)); 
+    char chosen_msg_label[GEN_LABEL_LEN];
+    snprintf(chosen_msg_label, GEN_LABEL_LEN, "Chosen msg name: %s", metadata_msgs[chosen_msg_idx].msg_name);
+    wattrset(stdscr, COLOR_PAIR(TITLE_THEME));
     WRITE_CENTERED(stdscr, current_row, chosen_msg_label, -1);
     wattrset(stdscr, COLOR_PAIR(MAIN_THEME));
     current_row += 2;
@@ -547,39 +521,35 @@ int get_can_msg_index_from_id(int id) {
     int idx = -1;
     switch (chosen_intf) {
         case primary_intf:
-            idx = primary_index_from_id(id);
-            break;
-        case secondary_intf:
-            idx = secondary_index_from_id(id);
+            idx = can_primary_api_index_from_id(id);
             break;
         case bms_intf:
-            idx = bms_index_from_id(id);
+            idx = can_bms_api_index_from_id(id);
             break;
         case inverter_intf:
-            idx = inverters_index_from_id(id);
+            idx = can_inverters_api_index_from_id(id);
             break;
         default:
             break;
     }
 
-    if(idx<0) {
+    if (idx < 0) {
         return -1;
     }
 
     return idx + get_intf_base_idx();
 }
 
-
-int render_can_msg_center(WINDOW* win, int row, struct can_frame* msg, int current_focus) {
+int render_can_msg_center(WINDOW *win, int row, struct can_frame *msg, int current_focus) {
     int msg_idx = get_can_msg_index_from_id(msg->can_id);
 
-    if(msg_idx>=0) {
+    if (msg_idx >= 0) {
         char str[200];
         sprintf(str, "[0x%03x] %s", msg->can_id, metadata_msgs[msg_idx].msg_name);
         WRITE_CENTERED(win, row, "                                          ", -1);
-        WRITE_CENTERED(win, row, str, row-12);
+        WRITE_CENTERED(win, row, str, row - 12);
 
-        if(row-12 == current_focus)
+        if (row - 12 == current_focus)
             can_selected_msg = *msg;
         return 0;
     }
@@ -608,14 +578,14 @@ int render_can_dump(int current_focus, void *data) {
     return 0;
 }
 
-int render_can_dump_msg(int current_focus, void* data) {
+int render_can_dump_msg(int current_focus, void *data) {
     int current_row = 12;
-    int msg_count=0;
+    int msg_count   = 0;
     int msg_invalid = 0;
-    for(size_t i=0; i<primary_MESSAGE_COUNT + secondary_MESSAGE_COUNT + inverters_MESSAGE_COUNT + bms_MESSAGE_COUNT; i++) {
-        if(msg_log[i].rec) {
-            if(msg_count>=current_focus) {
-                render_can_msg_center(stdscr, current_row++, &msg_log[i].data, current_focus-msg_count);
+    for (size_t i = 0; i < CAN_PRIMARY_MESSAGE_COUNT + CAN_INVERTERS_MESSAGE_COUNT + CAN_BMS_MESSAGE_COUNT; ++i) {
+        if (msg_log[i].rec) {
+            if (msg_count >= current_focus) {
+                render_can_msg_center(stdscr, current_row++, &msg_log[i].data, current_focus - msg_count);
             }
             msg_count++;
         }
@@ -625,27 +595,38 @@ int render_can_dump_msg(int current_focus, void* data) {
 }
 
 int render_can_msg_data_fields(int current_focus) {
-    
-    int msg_idx = get_can_msg_index_from_id(can_selected_msg.can_id);
-    if(msg_idx<0)
-        return -1;
-
-    uint8_t buf[1024];
-    uint8_t raw[1024];
+    int msg_idx = 0;
     char msg_params[1024];
-    device_set_address(&rxdev, raw, 1024, buf, 1024);
 
     switch (chosen_intf) {
         case primary_intf:
-            primary_devices_deserialize_from_id(&rxdev, can_selected_msg.can_id, can_selected_msg.data);
+            if (!can_primary_api_id_is_valid(can_selected_msg.can_id))
+                return -1;
+            msg_idx = can_primary_api_index_from_id(can_selected_msg.can_id);
+            (void)can_primary_api_deserialize_from_id(
+                can_selected_msg.can_id, can_selected_msg.data, &can_network_message.can_primary_message);
+
+            // TODO: Change
             primary_to_string_from_id(can_selected_msg.can_id, rxdev.message, msg_params);
             break;
         case bms_intf:
-            bms_devices_deserialize_from_id(&rxdev, can_selected_msg.can_id, can_selected_msg.data);
+            if (!can_bms_api_id_is_valid(can_selected_msg.can_id))
+                return -1;
+            msg_idx = can_bms_api_index_from_id(can_selected_msg.can_id);
+            (void)can_bms_api_deserialize_from_id(
+                can_selected_msg.can_id, can_selected_msg.data, &can_network_message.can_bms_message);
+
+            // TODO: Change
             bms_to_string_from_id(can_selected_msg.can_id, rxdev.message, msg_params);
             break;
         case inverter_intf:
-            inverters_devices_deserialize_from_id(&rxdev, can_selected_msg.can_id, can_selected_msg.data);
+            if (!can_inverters_api_id_is_valid(can_selected_msg.can_id))
+                return -1;
+            msg_idx = can_inverters_api_index_from_id(can_selected_msg.can_id);
+            (void)can_inverters_api_deserialize_from_id(
+                can_selected_msg.can_id, can_selected_msg.data, &can_network_message.can_inverters_message);
+
+            // TODO: Change
             inverters_to_string_from_id(can_selected_msg.can_id, rxdev.message, msg_params);
             break;
         default:
@@ -653,27 +634,25 @@ int render_can_msg_data_fields(int current_focus) {
     }
 
     char *token, *ptr, *tmpstr = msg_params;
-    int msg_count = 0;
+    int msg_count   = 0;
     int current_row = 12;
-    for(size_t i=0; i<metadata_msgs[msg_idx].n_fields; i++, tmpstr=NULL) {
-        token = strtok_r(tmpstr, ",", (char** restrict)&ptr);
-        if(msg_count>=current_focus) {
+    for (size_t i = 0; i < metadata_msgs[msg_idx].n_fields; i++, tmpstr = NULL) {
+        token = strtok_r(tmpstr, ",", (char **restrict)&ptr);
+        if (msg_count >= current_focus) {
             char msg_str[1024];
             sprintf(
-                    msg_str, 
-                    "%s: %s", 
-                    metadata_msgs[msg_idx].fields_name[i]+strlen(metadata_msgs[msg_idx].msg_name)+1,
-                    token
-                );
+                msg_str,
+                "%s: %s",
+                metadata_msgs[msg_idx].fields_name[i] + strlen(metadata_msgs[msg_idx].msg_name) + 1,
+                token);
             WRITE_CENTERED(stdscr, current_row, "                                          ", -1);
             WRITE_CENTERED(stdscr, current_row++, msg_str, msg_count);
         }
         msg_count++;
-
     }
 }
 
-int render_can_msg_data(int current_focus, void* data) {
+int render_can_msg_data(int current_focus, void *data) {
     wclear(stdscr);
     wattrset(stdscr, COLOR_PAIR(MAIN_THEME));
     box(stdscr, 0, 0);
@@ -695,4 +674,10 @@ int render_can_msg_data(int current_focus, void* data) {
     return 0;
 }
 
-int (*render_menus[n_application_tabs])(int, void *) = {render_main_menu, render_fill_fields_menu, render_main_menu, render_can_dump, render_can_msg_data, render_can_dump};
+int (*render_menus[n_application_tabs])(int, void *) = {
+    render_main_menu,
+    render_fill_fields_menu,
+    render_main_menu,
+    render_can_dump,
+    render_can_msg_data,
+    render_can_dump};
