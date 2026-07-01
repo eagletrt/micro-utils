@@ -409,7 +409,7 @@ int primary_to_string_from_id(uint16_t message_id, void *message, char *buffer) 
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_FEEDBACK_MISC_VOLTAGE:
             return sprintf(
                 buffer,
-                "%f,%f,%f,%f,%f,%f,%f",
+                "%f,%f,%f,%f,%f,%f,%f,%f",
                 ((struct CanPrimaryHvBmsFeedbackMiscVoltage *)message)->implausibility_v,
                 ((struct CanPrimaryHvBmsFeedbackMiscVoltage *)message)->imdcockpit_v,
                 ((struct CanPrimaryHvBmsFeedbackMiscVoltage *)message)->tsalgreenfaultlatched_v,
