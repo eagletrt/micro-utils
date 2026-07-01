@@ -82,14 +82,16 @@ int main(int argc, char const *argv[]) {
             read(poll_fds[1].fd, &candump_data, sizeof(candump_data));
             int msg_idx = get_can_msg_index_from_id(candump_data.can_id);
 
-            if (msg_log[msg_idx].rec == false && msg_idx >= 0) {
-                msg_log_count++;
-                msg_log[msg_idx].rec = true;
-            }
-            msg_log[msg_idx].data = candump_data;
+            if (msg_idx >= 0) {
+                if (msg_log[msg_idx].rec == false) {
+                    msg_log_count++;
+                    msg_log[msg_idx].rec = true;
+                }
+                msg_log[msg_idx].data = candump_data;
 
-            if (msg_idx == get_can_msg_index_from_id(can_selected_msg.can_id))
-                can_selected_msg = candump_data;
+                if (msg_idx == get_can_msg_index_from_id(can_selected_msg.can_id))
+                    can_selected_msg = candump_data;
+            }
 
             if (ctab == can_dump) {
                 render_can_dump_msg(current_focus, NULL);

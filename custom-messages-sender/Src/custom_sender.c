@@ -797,7 +797,9 @@ int action(int current_focus) {
                 return current_focus;
             }
         case can_dump: {
-            ctab = can_msg;
+            if (get_can_msg_index_from_id(can_selected_msg.can_id) >= 0) {
+                ctab = can_msg;
+            }
             return current_focus;
         }
         default:
@@ -816,7 +818,10 @@ int current_focus_dec(int current_focus) {
         case can_dump:
             return clamp(current_focus - 1, 0, msg_log_count - 1);
         case can_msg: {
-            int index = can_primary_api_index_from_id(can_selected_msg.can_id);
+            int index = get_can_msg_index_from_id(can_selected_msg.can_id);
+            if (index < 0) {
+                return current_focus;
+            }
             return clamp(current_focus - 1, 0, metadata_msgs[index].n_fields - 1);
         }
         default:
@@ -834,7 +839,10 @@ int current_focus_inc(int current_focus) {
         case can_dump:
             return clamp(current_focus + 1, 0, msg_log_count - 1);
         case can_msg: {
-            int index = can_primary_api_index_from_id(can_selected_msg.can_id);
+            int index = get_can_msg_index_from_id(can_selected_msg.can_id);
+            if (index < 0) {
+                return current_focus;
+            }
             return clamp(current_focus + 1, 0, metadata_msgs[index].n_fields - 1);
         }
         default:
@@ -1104,11 +1112,7 @@ int render_can_msg_data_fields(int current_focus) {
         token = strtok_r(tmpstr, ",", (char **restrict)&ptr);
         if (msg_count >= current_focus) {
             char msg_str[1024] = {0};
-            sprintf(
-                msg_str,
-                "%s: %s",
-                metadata_msgs[msg_idx].fields_name[i] + strlen(metadata_msgs[msg_idx].msg_name) + 1,
-                token);
+            sprintf(msg_str, "%s: %s", metadata_msgs[msg_idx].fields_name[i], token);
             WRITE_CENTERED(stdscr, current_row, "                                          ", -1);
             WRITE_CENTERED(stdscr, current_row++, msg_str, msg_count);
         }
@@ -1124,6 +1128,15 @@ int render_can_msg_data(int current_focus, void *data) {
     int current_row = 0;
 
     int msg_idx = get_can_msg_index_from_id(can_selected_msg.can_id);
+    if (msg_idx < 0) {
+        wattrset(stdscr, COLOR_PAIR(TITLE_THEME));
+        current_row++;
+        WRITE_CENTERED(stdscr, current_row, "No message selected", -1);
+        wattrset(stdscr, COLOR_PAIR(MAIN_THEME));
+        PRINT_INDICATIONS(stdscr);
+        refresh();
+        return -1;
+    }
 
     wattrset(stdscr, COLOR_PAIR(TITLE_THEME));
     current_row++;
