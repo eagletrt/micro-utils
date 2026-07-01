@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16.3)
 project(custom_message_sender)
 
-set(CMAKE_C_FLAGS "-g -Og -lm -lncurses -std=gnu23")
+set(CMAKE_C_FLAGS "-g -Og -std=gnu23")
 
 add_executable(${PROJECT_NAME}
     Src/main.c

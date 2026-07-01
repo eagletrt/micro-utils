@@ -290,8 +290,9 @@ int primary_to_string_from_id(uint16_t message_id, void *message, char *buffer) 
         case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_VOLTAGES:
             return sprintf(
                 buffer,
-                "%" PRIu8 ",",
-                "%" PRIu8 ",",
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%f,%f,%f",
                 ((struct CanPrimaryHvBmsCellboardVoltages *)message)->cellboardid,
                 ((struct CanPrimaryHvBmsCellboardVoltages *)message)->startindex,
                 ((struct CanPrimaryHvBmsCellboardVoltages *)message)->first_v,
@@ -558,30 +559,28 @@ int get_intf_tot_msg() {
 }
 
 int get_intf_base_idx() {
-    int base = 0U;
     switch (chosen_intf) {
-        case bms_intf:
-            base += CAN_INVERTERS_MESSAGE_COUNT;
-            ;  // Missing break is intentional
+        case primary_intf:
+            return 0;
         case inverter_intf:
-            base += CAN_PRIMARY_MESSAGE_COUNT;
-            ;  // Missing break is intentional
+            return CAN_PRIMARY_MESSAGE_COUNT;
+        case bms_intf:
+            return CAN_PRIMARY_MESSAGE_COUNT + CAN_INVERTERS_MESSAGE_COUNT;
         default:
-            return base;
+            return 0;
     }
 }
 
 int get_idx_from_intf(int bidx, enum interfaces_t intf) {
-    int base = bidx;
     switch (intf) {
-        case bms_intf:
-            base += CAN_INVERTERS_MESSAGE_COUNT;
-            ;  // Missing break is intentional
+        case primary_intf:
+            return bidx;
         case inverter_intf:
-            base += CAN_PRIMARY_MESSAGE_COUNT;
-            ;  // Missing break is intentional
+            return bidx + CAN_PRIMARY_MESSAGE_COUNT;
+        case bms_intf:
+            return bidx + CAN_PRIMARY_MESSAGE_COUNT + CAN_INVERTERS_MESSAGE_COUNT;
         default:
-            return base;
+            return bidx;
     }
 }
 
@@ -687,9 +686,9 @@ void fill_data(can_message_t *msg, char *final_command, const char *device) {
 }
 
 void send_message(int current_focus) {
-    int msgid         = -1;
-    can_message_t msg = {0};
-    char to_serialize[BUFSIZ];
+    int msgid                 = -1;
+    can_message_t msg         = {0};
+    char to_serialize[BUFSIZ] = {0};
     char final_command[BUFSIZ];
     int can_send_retval          = 0;
     int current_to_serialize_idx = 0;
@@ -705,6 +704,7 @@ void send_message(int current_focus) {
         memcpy(to_serialize + current_to_serialize_idx, current_fields[ifield], field_len);
         current_to_serialize_idx += field_len;
     }
+    to_serialize[current_to_serialize_idx] = '\0';
     switch (chosen_intf) {
         case primary_intf: {
             msgid         = can_primary_api_id_from_index(chosen_msg_idx);
@@ -786,18 +786,16 @@ int action(int current_focus) {
         case fill_fields_menu:
             if (current_focus < current_n_fields) {
                 retrieve_input_prompt(current_focus);
+                return current_focus;
             } else {
                 send_message(current_focus);
-                chosen_msg_idx = -1;
-                if (chosen_msg_idx == inverter_intf) {
-                    current_focus = 0;
-                }
+                chosen_msg_idx   = -1;
                 chosen_interface = primary_intf;
                 current_n_fields = -1;
                 ctab             = main_menu;
+                current_focus    = 0;
                 return current_focus;
             }
-            break;
         case can_dump: {
             ctab = can_msg;
             return current_focus;
@@ -817,9 +815,10 @@ int current_focus_dec(int current_focus) {
             return clamp(current_focus - 1, 0, metadata_msgs[chosen_msg_idx].n_fields);
         case can_dump:
             return clamp(current_focus - 1, 0, msg_log_count - 1);
-        case can_msg:
+        case can_msg: {
             int index = can_primary_api_index_from_id(can_selected_msg.can_id);
             return clamp(current_focus - 1, 0, metadata_msgs[index].n_fields - 1);
+        }
         default:
             return current_focus;
     }
@@ -834,9 +833,10 @@ int current_focus_inc(int current_focus) {
             return clamp(current_focus + 1, 0, metadata_msgs[chosen_msg_idx].n_fields);
         case can_dump:
             return clamp(current_focus + 1, 0, msg_log_count - 1);
-        case can_msg:
+        case can_msg: {
             int index = can_primary_api_index_from_id(can_selected_msg.can_id);
             return clamp(current_focus + 1, 0, metadata_msgs[index].n_fields - 1);
+        }
         default:
             return current_focus;
     }
@@ -1103,7 +1103,7 @@ int render_can_msg_data_fields(int current_focus) {
     for (size_t i = 0; i < metadata_msgs[msg_idx].n_fields; i++, tmpstr = NULL) {
         token = strtok_r(tmpstr, ",", (char **restrict)&ptr);
         if (msg_count >= current_focus) {
-            char msg_str[1024];
+            char msg_str[1024] = {0};
             sprintf(
                 msg_str,
                 "%s: %s",
@@ -1114,6 +1114,7 @@ int render_can_msg_data_fields(int current_focus) {
         }
         msg_count++;
     }
+    return 0;
 }
 
 int render_can_msg_data(int current_focus, void *data) {

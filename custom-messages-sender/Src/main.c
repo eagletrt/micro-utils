@@ -7,7 +7,7 @@ int n_shown_msgs              = 20;
 static_assert(N_CAN_DEVICES == (sizeof(can_devices) / GEN_STR_LEN));
 
 void init_rec_log() {
-    for (size_t i = 0; i < CAN_PRIMARY_MESSAGE_COUNT + CAN_INVERTERS_MESSAGE_COUNT; i++) {
+    for (size_t i = 0; i < CAN_PRIMARY_MESSAGE_COUNT + CAN_INVERTERS_MESSAGE_COUNT + CAN_BMS_MESSAGE_COUNT; i++) {
         msg_log[i].rec = false;
     }
     msg_log_count = 0;
@@ -201,43 +201,43 @@ int main(int argc, char const *argv[]) {
                         }
                     }
                     break;
-                    case search_menu_rec: {
-                        switch (user_input) {
-                            case ESCAPE_KEY: {
-                                memset(searching_buffer, 0, BUFSIZ);
-                                searching_buffer_idx = 0;
-                                ctab                 = can_dump;
-                                clear();
-                                refresh();
-                                break;
-                            }
-                            case KEY_BACKSPACE: {
-                                searching_buffer_idx--;
-                                searching_buffer_idx                   = clamp(searching_buffer_idx, 0, BUFSIZ - 1);
-                                searching_buffer[searching_buffer_idx] = 0;
-                                break;
-                            }
-                            case KEY_UP:
-                                current_focus = current_focus_dec(current_focus);
-                                break;
-                            case KEY_DOWN:
-                                current_focus = current_focus_inc(current_focus);
-                                break;
-                            case KEY_ENTER:
-                            case '\n':
-                                current_focus = action(current_focus);
-                                break;
-                            default: {
-                                current_focus                          = 0;
-                                searching_buffer[searching_buffer_idx] = user_input;
-                                searching_buffer_idx++;
-                                searching_buffer_idx = clamp(searching_buffer_idx, 0, BUFSIZ - 1);
-                                break;
-                            }
+                }
+                case search_menu_rec: {
+                    switch (user_input) {
+                        case ESCAPE_KEY: {
+                            memset(searching_buffer, 0, BUFSIZ);
+                            searching_buffer_idx = 0;
+                            ctab                 = can_dump;
+                            clear();
+                            refresh();
+                            break;
                         }
-                        break;
+                        case KEY_BACKSPACE: {
+                            searching_buffer_idx--;
+                            searching_buffer_idx                   = clamp(searching_buffer_idx, 0, BUFSIZ - 1);
+                            searching_buffer[searching_buffer_idx] = 0;
+                            break;
+                        }
+                        case KEY_UP:
+                            current_focus = current_focus_dec(current_focus);
+                            break;
+                        case KEY_DOWN:
+                            current_focus = current_focus_inc(current_focus);
+                            break;
+                        case KEY_ENTER:
+                        case '\n':
+                            current_focus = action(current_focus);
+                            break;
+                        default: {
+                            current_focus                          = 0;
+                            searching_buffer[searching_buffer_idx] = user_input;
+                            searching_buffer_idx++;
+                            searching_buffer_idx = clamp(searching_buffer_idx, 0, BUFSIZ - 1);
+                            break;
+                        }
                     }
-                } break;
+                    break;
+                }
                 case can_dump: {
                     switch (user_input) {
                         case ESCAPE_KEY:
@@ -321,6 +321,7 @@ int main(int argc, char const *argv[]) {
                             quit = true;
                             break;
                     }
+                    break;
                 }
                 default: {
                     break;
