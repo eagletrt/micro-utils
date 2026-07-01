@@ -115,12 +115,366 @@ int primary_message_name_from_id(uint16_t id, char *buffer) {
 }
 
 int primary_to_string_from_id(uint16_t message_id, void *message, char *buffer) {
-    // switch (message_id) {
-    //     case 1818:
-    //         return primary_nlg5_diag_tx_to_string((primary_nlg5_diag_tx_t *)message, buffer);
-    //     default:
-    //         return -1;
-    // }
+    switch (message_id) {
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_TELEMETRY_VERSION:
+            return sprintf(
+                buffer,
+                "%" PRIu32 ","
+                "%" PRIu32 "",
+                ((struct CanPrimaryTelemetryVersion *)message)->buildtime_s,
+                ((struct CanPrimaryTelemetryVersion *)message)->canlibbuildtime_s);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_TELEMETRY_STATUS:
+            return sprintf(buffer, "%" PRIu8 "", ((struct CanPrimaryTelemetryStatus *)message)->name);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_ECU_VERSION:
+            return sprintf(
+                buffer,
+                "%" PRIu32 ","
+                "%" PRIu32 "",
+                ((struct CanPrimaryEcuVersion *)message)->buildtime_s,
+                ((struct CanPrimaryEcuVersion *)message)->canlibbuildtime_s);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_ECU_STATUS:
+            return sprintf(buffer, "%" PRIu8 "", ((struct CanPrimaryEcuStatus *)message)->name);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_ECU_SET_HV_BMS_STATUS:
+            return sprintf(buffer, "%" PRIu8 "", ((struct CanPrimaryEcuSetHvBmsStatus *)message)->targetstatus);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_PEDALS_VERSION:
+            return sprintf(
+                buffer,
+                "%" PRIu32 ","
+                "%" PRIu32 "",
+                ((struct CanPrimaryPedalsVersion *)message)->buildtime_s,
+                ((struct CanPrimaryPedalsVersion *)message)->canlibbuildtime_s);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_PEDALS_STATUS:
+            return sprintf(buffer, "%" PRIu8 ",", ((struct CanPrimaryPedalsStatus *)message)->name);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_PEDALS_APPS:
+            return sprintf(
+                buffer,
+                "%f,%f,%f",
+                ((struct CanPrimaryPedalsApps *)message)->travelfirst_pct,
+                ((struct CanPrimaryPedalsApps *)message)->travelsecond_pct,
+                ((struct CanPrimaryPedalsApps *)message)->travelthird_pct);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_PEDALS_THROTTLE:
+            return sprintf(
+                buffer,
+                "%f,"
+                "%" PRIu8 ",",
+                ((struct CanPrimaryPedalsThrottle *)message)->travel_pct,
+                ((struct CanPrimaryPedalsThrottle *)message)->status);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_PEDALS_BRAKE:
+            return sprintf(
+                buffer,
+                "%f,%f,%f",
+                ((struct CanPrimaryPedalsBrake *)message)->travel_pct,
+                ((struct CanPrimaryPedalsBrake *)message)->pressurefront_bar,
+                ((struct CanPrimaryPedalsBrake *)message)->pressurerear_bar);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_STATUS:
+            return sprintf(buffer, "%" PRIu8 "", ((struct CanPrimaryHvBmsStatus *)message)->name);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_VERSION:
+            return sprintf(
+                buffer,
+                "%" PRIu32 ","
+                "%" PRIu32 "",
+                ((struct CanPrimaryHvBmsVersion *)message)->buildtime_s,
+                ((struct CanPrimaryHvBmsVersion *)message)->canlibbuildtime_s);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_VERSION:
+            return sprintf(
+                buffer,
+                "%" PRIu8 ","
+                "%" PRIu32 ","
+                "%" PRIu32 "",
+                ((struct CanPrimaryHvBmsCellboardVersion *)message)->id,
+                ((struct CanPrimaryHvBmsCellboardVersion *)message)->buildtime_s,
+                ((struct CanPrimaryHvBmsCellboardVersion *)message)->canlibbuildtime_s);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_FLASH:
+            return sprintf(
+                buffer,
+                "%" PRIu8 ","
+                "%" PRIu8 "",
+                ((struct CanPrimaryHvBmsFlash *)message)->forward_bool,
+                ((struct CanPrimaryHvBmsFlash *)message)->cellboardid);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_MAINBOARD_TX:
+            return sprintf(buffer, "%" PRIu8 "", ((struct CanPrimaryHvBmsMainboardTx *)message)->dummy);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_MAINBOARD_RX:
+            return sprintf(buffer, "%" PRIu8 "", ((struct CanPrimaryHvBmsMainboardRx *)message)->dummy);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_TX_0:
+            return sprintf(buffer, "%" PRIu8 "", ((struct CanPrimaryHvBmsCellboardOpenbltTx0 *)message)->dummy);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_RX_0:
+            return sprintf(buffer, "%" PRIu8 "", ((struct CanPrimaryHvBmsCellboardOpenbltRx0 *)message)->dummy);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_TX_1:
+            return sprintf(buffer, "%" PRIu8 "", ((struct CanPrimaryHvBmsCellboardOpenbltTx1 *)message)->dummy);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_RX_1:
+            return sprintf(buffer, "%" PRIu8 "", ((struct CanPrimaryHvBmsCellboardOpenbltRx1 *)message)->dummy);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_TX_2:
+            return sprintf(buffer, "%" PRIu8 "", ((struct CanPrimaryHvBmsCellboardOpenbltTx2 *)message)->dummy);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_RX_2:
+            return sprintf(buffer, "%" PRIu8 "", ((struct CanPrimaryHvBmsCellboardOpenbltRx2 *)message)->dummy);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_TX_3:
+            return sprintf(buffer, "%" PRIu8 "", ((struct CanPrimaryHvBmsCellboardOpenbltTx3 *)message)->dummy);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_RX_3:
+            return sprintf(buffer, "%" PRIu8 "", ((struct CanPrimaryHvBmsCellboardOpenbltRx3 *)message)->dummy);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_TX_4:
+            return sprintf(buffer, "%" PRIu8 "", ((struct CanPrimaryHvBmsCellboardOpenbltTx4 *)message)->dummy);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_RX_4:
+            return sprintf(buffer, "%" PRIu8 "", ((struct CanPrimaryHvBmsCellboardOpenbltRx4 *)message)->dummy);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_TX_5:
+            return sprintf(buffer, "%" PRIu8 "", ((struct CanPrimaryHvBmsCellboardOpenbltTx5 *)message)->dummy);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_OPENBLT_RX_5:
+            return sprintf(buffer, "%" PRIu8 "", ((struct CanPrimaryHvBmsCellboardOpenbltRx5 *)message)->dummy);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_BALANCING_STATUS:
+            return sprintf(
+                buffer,
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 "",
+                ((struct CanPrimaryHvBmsBalancingStatus *)message)->cellboardid,
+                ((struct CanPrimaryHvBmsBalancingStatus *)message)->balancing_bool,
+                ((struct CanPrimaryHvBmsBalancingStatus *)message)->errorcancomm,
+                ((struct CanPrimaryHvBmsBalancingStatus *)message)->errorltccomm,
+                ((struct CanPrimaryHvBmsBalancingStatus *)message)->erroropenwire,
+                ((struct CanPrimaryHvBmsBalancingStatus *)message)->errortempcomm0,
+                ((struct CanPrimaryHvBmsBalancingStatus *)message)->errortempcomm1,
+                ((struct CanPrimaryHvBmsBalancingStatus *)message)->errortempcomm2,
+                ((struct CanPrimaryHvBmsBalancingStatus *)message)->errortempcomm3,
+                ((struct CanPrimaryHvBmsBalancingStatus *)message)->errortempcomm4,
+                ((struct CanPrimaryHvBmsBalancingStatus *)message)->errortempcomm5,
+                ((struct CanPrimaryHvBmsBalancingStatus *)message)->balancingcell0,
+                ((struct CanPrimaryHvBmsBalancingStatus *)message)->balancingcell1,
+                ((struct CanPrimaryHvBmsBalancingStatus *)message)->balancingcell2,
+                ((struct CanPrimaryHvBmsBalancingStatus *)message)->balancingcell3,
+                ((struct CanPrimaryHvBmsBalancingStatus *)message)->balancingcell4,
+                ((struct CanPrimaryHvBmsBalancingStatus *)message)->balancingcell5,
+                ((struct CanPrimaryHvBmsBalancingStatus *)message)->balancingcell6,
+                ((struct CanPrimaryHvBmsBalancingStatus *)message)->balancingcell7,
+                ((struct CanPrimaryHvBmsBalancingStatus *)message)->balancingcell8,
+                ((struct CanPrimaryHvBmsBalancingStatus *)message)->balancingcell9,
+                ((struct CanPrimaryHvBmsBalancingStatus *)message)->balancingcell10,
+                ((struct CanPrimaryHvBmsBalancingStatus *)message)->balancingcell11,
+                ((struct CanPrimaryHvBmsBalancingStatus *)message)->balancingcell12,
+                ((struct CanPrimaryHvBmsBalancingStatus *)message)->balancingcell13,
+                ((struct CanPrimaryHvBmsBalancingStatus *)message)->balancingcell14,
+                ((struct CanPrimaryHvBmsBalancingStatus *)message)->balancingcell15,
+                ((struct CanPrimaryHvBmsBalancingStatus *)message)->balancingcell16,
+                ((struct CanPrimaryHvBmsBalancingStatus *)message)->balancingcell17);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_TS_VOLTAGE:
+            return sprintf(
+                buffer,
+                "%f,%f,%f",
+                ((struct CanPrimaryHvBmsTsVoltage *)message)->pack_v,
+                ((struct CanPrimaryHvBmsTsVoltage *)message)->cellsum_v,
+                ((struct CanPrimaryHvBmsTsVoltage *)message)->bus_v);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_VOLTAGES:
+            return sprintf(
+                buffer,
+                "%" PRIu8 ",",
+                "%" PRIu8 ",",
+                ((struct CanPrimaryHvBmsCellboardVoltages *)message)->cellboardid,
+                ((struct CanPrimaryHvBmsCellboardVoltages *)message)->startindex,
+                ((struct CanPrimaryHvBmsCellboardVoltages *)message)->first_v,
+                ((struct CanPrimaryHvBmsCellboardVoltages *)message)->second_v,
+                ((struct CanPrimaryHvBmsCellboardVoltages *)message)->third_v);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_VOLTAGES_INFO:
+            return sprintf(
+                buffer,
+                "%f,%f,%f,%f",
+                ((struct CanPrimaryHvBmsCellboardVoltagesInfo *)message)->max_v,
+                ((struct CanPrimaryHvBmsCellboardVoltagesInfo *)message)->min_v,
+                ((struct CanPrimaryHvBmsCellboardVoltagesInfo *)message)->delta_v,
+                ((struct CanPrimaryHvBmsCellboardVoltagesInfo *)message)->average_v);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_TEMPERATURES:
+            return sprintf(
+                buffer,
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%f,%f,%f,%f",
+                ((struct CanPrimaryHvBmsCellboardTemperatures *)message)->cellboardid,
+                ((struct CanPrimaryHvBmsCellboardTemperatures *)message)->startindex,
+                ((struct CanPrimaryHvBmsCellboardTemperatures *)message)->first_c,
+                ((struct CanPrimaryHvBmsCellboardTemperatures *)message)->second_c,
+                ((struct CanPrimaryHvBmsCellboardTemperatures *)message)->third_c,
+                ((struct CanPrimaryHvBmsCellboardTemperatures *)message)->fourth_c);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CELLBOARD_TEMPERATURES_INFO:
+            return sprintf(
+                buffer,
+                "%f,%f,%f",
+                ((struct CanPrimaryHvBmsCellboardTemperaturesInfo *)message)->max_c,
+                ((struct CanPrimaryHvBmsCellboardTemperaturesInfo *)message)->min_c,
+                ((struct CanPrimaryHvBmsCellboardTemperaturesInfo *)message)->average_c);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_CURRENT:
+            return sprintf(buffer, "%f", ((struct CanPrimaryHvBmsCurrent *)message)->current_a);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_POWER:
+            return sprintf(buffer, "%f", ((struct CanPrimaryHvBmsPower *)message)->power_kw);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_IMD:
+            return sprintf(
+                buffer,
+                "%" PRIu8 ","
+                "%f,%f,"
+                "%" PRIu16 ","
+                "%" PRIu8 ","
+                "%" PRIu8 "",
+                ((struct CanPrimaryHvBmsImd *)message)->status,
+                ((struct CanPrimaryHvBmsImd *)message)->frequency_hz,
+                ((struct CanPrimaryHvBmsImd *)message)->dutycycle_pct,
+                ((struct CanPrimaryHvBmsImd *)message)->details,
+                ((struct CanPrimaryHvBmsImd *)message)->fault_bool,
+                ((struct CanPrimaryHvBmsImd *)message)->period_ms);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_FEEDBACK_STATUS:
+            return sprintf(
+                buffer,
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 "",
+                ((struct CanPrimaryHvBmsFeedbackStatus *)message)->implausibility,
+                ((struct CanPrimaryHvBmsFeedbackStatus *)message)->imdcockpit,
+                ((struct CanPrimaryHvBmsFeedbackStatus *)message)->tsalgreenfaultlatched,
+                ((struct CanPrimaryHvBmsFeedbackStatus *)message)->bmscockpit,
+                ((struct CanPrimaryHvBmsFeedbackStatus *)message)->extlatched,
+                ((struct CanPrimaryHvBmsFeedbackStatus *)message)->tsalgreen,
+                ((struct CanPrimaryHvBmsFeedbackStatus *)message)->tsover60v,
+                ((struct CanPrimaryHvBmsFeedbackStatus *)message)->airnstatus,
+                ((struct CanPrimaryHvBmsFeedbackStatus *)message)->airpstatus,
+                ((struct CanPrimaryHvBmsFeedbackStatus *)message)->airpgate,
+                ((struct CanPrimaryHvBmsFeedbackStatus *)message)->airngate,
+                ((struct CanPrimaryHvBmsFeedbackStatus *)message)->prechargestatus,
+                ((struct CanPrimaryHvBmsFeedbackStatus *)message)->tspover60v,
+                ((struct CanPrimaryHvBmsFeedbackStatus *)message)->imdfault,
+                ((struct CanPrimaryHvBmsFeedbackStatus *)message)->checkmux,
+                ((struct CanPrimaryHvBmsFeedbackStatus *)message)->sdend,
+                ((struct CanPrimaryHvBmsFeedbackStatus *)message)->sdout,
+                ((struct CanPrimaryHvBmsFeedbackStatus *)message)->sdin,
+                ((struct CanPrimaryHvBmsFeedbackStatus *)message)->sdbms,
+                ((struct CanPrimaryHvBmsFeedbackStatus *)message)->sdimd);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_FEEDBACK_TS_VOLTAGE:
+            return sprintf(
+                buffer,
+                "%f,%f,%f,%f,%f,%f,%f",
+                ((struct CanPrimaryHvBmsFeedbackTsVoltage *)message)->airnstatus_v,
+                ((struct CanPrimaryHvBmsFeedbackTsVoltage *)message)->airngate_v,
+                ((struct CanPrimaryHvBmsFeedbackTsVoltage *)message)->prechargestatus_v,
+                ((struct CanPrimaryHvBmsFeedbackTsVoltage *)message)->airpstatus_v,
+                ((struct CanPrimaryHvBmsFeedbackTsVoltage *)message)->airpgate_v,
+                ((struct CanPrimaryHvBmsFeedbackTsVoltage *)message)->tsover60v_v,
+                ((struct CanPrimaryHvBmsFeedbackTsVoltage *)message)->tspover60v_v);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_FEEDBACK_SD_VOLTAGE:
+            return sprintf(
+                buffer,
+                "%f,%f,%f,%f,%f",
+                ((struct CanPrimaryHvBmsFeedbackSdVoltage *)message)->sdend_v,
+                ((struct CanPrimaryHvBmsFeedbackSdVoltage *)message)->sdout_v,
+                ((struct CanPrimaryHvBmsFeedbackSdVoltage *)message)->sdin_v,
+                ((struct CanPrimaryHvBmsFeedbackSdVoltage *)message)->sdbms_v,
+                ((struct CanPrimaryHvBmsFeedbackSdVoltage *)message)->sdimd_v);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_FEEDBACK_MISC_VOLTAGE:
+            return sprintf(
+                buffer,
+                "%f,%f,%f,%f,%f,%f,%f",
+                ((struct CanPrimaryHvBmsFeedbackMiscVoltage *)message)->implausibility_v,
+                ((struct CanPrimaryHvBmsFeedbackMiscVoltage *)message)->imdcockpit_v,
+                ((struct CanPrimaryHvBmsFeedbackMiscVoltage *)message)->tsalgreenfaultlatched_v,
+                ((struct CanPrimaryHvBmsFeedbackMiscVoltage *)message)->bmscockpit_v,
+                ((struct CanPrimaryHvBmsFeedbackMiscVoltage *)message)->extlatched_v,
+                ((struct CanPrimaryHvBmsFeedbackMiscVoltage *)message)->tsalgreen_v,
+                ((struct CanPrimaryHvBmsFeedbackMiscVoltage *)message)->imdfault_v,
+                ((struct CanPrimaryHvBmsFeedbackMiscVoltage *)message)->checkmux_v);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_HV_BMS_ERRORS:
+            return sprintf(
+                buffer,
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 ","
+                "%" PRIu8 "",
+                ((struct CanPrimaryHvBmsErrors *)message)->cellundervoltage,
+                ((struct CanPrimaryHvBmsErrors *)message)->cellovervoltage,
+                ((struct CanPrimaryHvBmsErrors *)message)->cellundertemperature,
+                ((struct CanPrimaryHvBmsErrors *)message)->cellovertemperature,
+                ((struct CanPrimaryHvBmsErrors *)message)->overcurrent,
+                ((struct CanPrimaryHvBmsErrors *)message)->cancommunication,
+                ((struct CanPrimaryHvBmsErrors *)message)->tsvoltagemismatch,
+                ((struct CanPrimaryHvBmsErrors *)message)->cellboardcommunication,
+                ((struct CanPrimaryHvBmsErrors *)message)->cellboardinternal,
+                ((struct CanPrimaryHvBmsErrors *)message)->connectordisconnected,
+                ((struct CanPrimaryHvBmsErrors *)message)->fansdisconnected,
+                ((struct CanPrimaryHvBmsErrors *)message)->feedback,
+                ((struct CanPrimaryHvBmsErrors *)message)->feedbackcircuitry,
+                ((struct CanPrimaryHvBmsErrors *)message)->eepromcommunication,
+                ((struct CanPrimaryHvBmsErrors *)message)->eepromwrite);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_STEERING_WHEEL_FLASH:
+            return sprintf(buffer, "%" PRIu8 "", ((struct CanPrimarySteeringWheelFlash *)message)->dummy);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_STEERING_WHEEL_OPENBLT_TX:
+            return sprintf(buffer, "%" PRIu8 "", ((struct CanPrimarySteeringWheelOpenbltTx *)message)->dummy);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_STEERING_WHEEL_OPENBLT_RX:
+            return sprintf(buffer, "%" PRIu8 "", ((struct CanPrimarySteeringWheelOpenbltRx *)message)->dummy);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_STEERING_WHEEL_VERSION:
+            return sprintf(
+                buffer,
+                "%" PRIu32 ","
+                "%" PRIu32 "",
+                ((struct CanPrimarySteeringWheelVersion *)message)->buildtime_s,
+                ((struct CanPrimarySteeringWheelVersion *)message)->canlibbuildtime_s);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_STEERING_WHEEL_SET_ECU_STATUS:
+            return sprintf(buffer, "%" PRIu8 "", ((struct CanPrimarySteeringWheelSetEcuStatus *)message)->targetstatus);
+        case CAN_PRIMARY_MESSAGE_FRAME_ID_STEERING_WHEEL_SET_HV_BMS_BALANCING_STATUS:
+            return sprintf(
+                buffer,
+                "%" PRIu8 ","
+                "%" PRIu16 "",
+                ((struct CanPrimarySteeringWheelSetHvBmsBalancingStatus *)message)->targetstatus,
+                ((struct CanPrimarySteeringWheelSetHvBmsBalancingStatus *)message)->threshold);
+        default:
+            return -1;
+    }
 }
 
 struct sockaddr_can address                  = {0};
