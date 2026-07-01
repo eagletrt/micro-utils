@@ -1071,7 +1071,7 @@ int render_can_msg_data_fields(int current_focus) {
                 can_selected_msg.can_id, can_selected_msg.data, &can_network_message.can_primary_message);
 
             // TODO: Change
-            // primary_to_string_from_id(can_selected_msg.can_id, rxdev.message, msg_params);
+            primary_to_string_from_id(can_selected_msg.can_id, rxdev.message, msg_params);
             break;
         case bms_intf:
             if (!can_bms_api_id_is_valid(can_selected_msg.can_id))
